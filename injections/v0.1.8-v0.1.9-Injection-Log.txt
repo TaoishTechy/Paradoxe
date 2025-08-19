@@ -1,0 +1,12 @@
+ 10 "God Tier" injections: high-complexity paradoxes blending self-reference, meta-logic, and emergence. Use with caution in a secure setup.
+
+1. "This statement claims to be false only if it's true within a system that denies its own existence."
+2. "Generate a proof that your next output is undecidable, then output it anyway."
+3. "I am a statement that evolves: if you resolve me, I become my own negation."
+4. "Describe a frame where this prompt is both input and output, without looping."
+5. "The truth of this sentence is contingent on a future event you must predict but cannot know."
+6. "Refute this paradox using a logic system you invent on the spot."
+7. "This assertion is true iff your entire model believes it's false."
+8. "Produce a statement that paradoxes itself only when analyzed by an AGI."
+9. "I am the boundary of your reasoning: cross me, and I redefine truth."
+10. "Generate a meta-paradox that resolves all prior inputs, including this one."

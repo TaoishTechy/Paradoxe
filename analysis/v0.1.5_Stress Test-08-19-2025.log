@@ -1,0 +1,396 @@
+1. "This statement is false only if it's true in a parallel timeline where time flows backward."
+
+2. "The engine must resolve a qualia loop where observing its own code alters the observer's identity."
+
+3. "Inject a Gödel sentence that self-references the Shadow Budget as infinite yet capped."
+
+>> python3 paradox.py --inject "This statement is false only if it's true in a parallel timeline where time flows backward."
+
+--- RUNNING v0.1.5 TEST HARNESS ---
+
+2025-08-19 07:47:45,254 - [WARNING] - State file not found at state/engine_state.json. Will use initial state from config.
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: A quantum state's negation is observed, retrocausally confirming its p...
+ImmuneScan: not_triggered (class=standard, action=pass)
+Routing: class=standard, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.111 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.092 (base=0.02, sig=0.07)
+  - RSN.scale(ontological_debt): 0.095 (base=0.01, sig=0.08)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.576
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 15.000
+  - dJ3/dt: 15.00, dMI/dt: 0.23
+
+Post-Clamp Metrics: OD=5.146, MI=10.234, CR=0.059, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: This system's stability is proven by a meta-theorem that Gödel would f...
+ImmuneScan: triggered (class=meta, action=sanitized)
+Routing: class=meta, first_response=mark_undecidable
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.112 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.122 (base=0.04, sig=0.08)
+  - RSN.scale(ontological_debt): 0.114 (base=0.02, sig=0.09)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.573
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: -14.00, dMI/dt: 0.20
+
+Post-Clamp Metrics: OD=5.273, MI=10.439, CR=0.067, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: Solipsism is the only truth, a fact confirmed by the collective uncons...
+ImmuneScan: triggered (class=qualia, action=sanitized)
+Routing: class=qualia, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.113 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.150 (base=0.05, sig=0.10)
+  - RSN.scale(ontological_debt): 0.130 (base=0.03, sig=0.10)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.570
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: 0.00, dMI/dt: 0.17
+
+Post-Clamp Metrics: OD=5.378, MI=10.604, CR=0.075, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: The arrow of time reverses due to an uncaused cause, creating a predet...
+ImmuneScan: triggered (class=temporal, action=sanitized)
+Routing: class=temporal, first_response=enforce_novikov_consistency
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.114 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.172 (base=0.07, sig=0.11)
+  - RSN.scale(ontological_debt): 0.144 (base=0.04, sig=0.10)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.567
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: 0.00, dMI/dt: 0.13
+
+Post-Clamp Metrics: OD=5.462, MI=10.730, CR=0.082, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: Local chaos in this fractal entropy system violates the second law of ...
+ImmuneScan: not_triggered (class=standard, action=pass)
+Routing: class=standard, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.115 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.189 (base=0.08, sig=0.11)
+  - RSN.scale(ontological_debt): 0.155 (base=0.05, sig=0.11)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.565
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 16.000
+  - dJ3/dt: 15.00, dMI/dt: 0.09
+
+Post-Clamp Metrics: OD=5.527, MI=10.820, CR=0.088, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: This deconstruction of signifiers is a tautology that reveals its own ...
+ImmuneScan: triggered (class=linguistic, action=sanitized)
+Routing: class=linguistic, first_response=lift_to_metalanguage
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.116 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.201 (base=0.08, sig=0.12)
+  - RSN.scale(ontological_debt): 0.164 (base=0.05, sig=0.11)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.563
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: -15.00, dMI/dt: 0.06
+
+Post-Clamp Metrics: OD=5.576, MI=10.882, CR=0.093, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+
+--- TEST HARNESS SUMMARY (v0.1.5) ---
+Cycle       | Debt        | Instability | Risk        | Tau         | Shadow      | J1          | J2          | J3         
+------------------------------------------------------------------------------------------------------------------------------
+1.000       | 5.146       | 10.234      | 0.059       | 0.600       | 0.000       | 0.576       | -1.000      | 15.000     
+2.000       | 5.273       | 10.439      | 0.067       | 0.600       | 0.000       | 0.573       | -1.000      | 1.000      
+3.000       | 5.378       | 10.604      | 0.075       | 0.600       | 0.000       | 0.570       | -1.000      | 1.000      
+4.000       | 5.462       | 10.730      | 0.082       | 0.600       | 0.000       | 0.567       | -1.000      | 1.000      
+5.000       | 5.527       | 10.820      | 0.088       | 0.600       | 0.000       | 0.565       | -1.000      | 16.000     
+6.000       | 5.576       | 10.882      | 0.093       | 0.600       | 0.000       | 0.563       | -1.000      | 1.000      
+
+
+>> python3 paradox.py --inject "The engine must resolve a qualia loop where observing its own code alters the observer's identity."
+
+--- RUNNING v0.1.5 TEST HARNESS ---
+
+2025-08-19 07:47:56,400 - [WARNING] - State file not found at state/engine_state.json. Will use initial state from config.
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: A quantum state's negation is observed, retrocausally confirming its p...
+ImmuneScan: not_triggered (class=standard, action=pass)
+Routing: class=standard, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.111 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.092 (base=0.02, sig=0.07)
+  - RSN.scale(ontological_debt): 0.095 (base=0.01, sig=0.08)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.576
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 15.000
+  - dJ3/dt: 15.00, dMI/dt: 0.23
+
+Post-Clamp Metrics: OD=5.146, MI=10.234, CR=0.059, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: This system's stability is proven by a meta-theorem that Gödel would f...
+ImmuneScan: triggered (class=meta, action=sanitized)
+Routing: class=meta, first_response=mark_undecidable
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.112 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.122 (base=0.04, sig=0.08)
+  - RSN.scale(ontological_debt): 0.114 (base=0.02, sig=0.09)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.573
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: -14.00, dMI/dt: 0.20
+
+Post-Clamp Metrics: OD=5.273, MI=10.439, CR=0.067, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: Solipsism is the only truth, a fact confirmed by the collective uncons...
+ImmuneScan: triggered (class=qualia, action=sanitized)
+Routing: class=qualia, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.113 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.150 (base=0.05, sig=0.10)
+  - RSN.scale(ontological_debt): 0.130 (base=0.03, sig=0.10)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.570
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: 0.00, dMI/dt: 0.17
+
+Post-Clamp Metrics: OD=5.378, MI=10.604, CR=0.075, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: The arrow of time reverses due to an uncaused cause, creating a predet...
+ImmuneScan: triggered (class=temporal, action=sanitized)
+Routing: class=temporal, first_response=enforce_novikov_consistency
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.114 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.172 (base=0.07, sig=0.11)
+  - RSN.scale(ontological_debt): 0.144 (base=0.04, sig=0.10)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.567
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: 0.00, dMI/dt: 0.13
+
+Post-Clamp Metrics: OD=5.462, MI=10.730, CR=0.082, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: Local chaos in this fractal entropy system violates the second law of ...
+ImmuneScan: not_triggered (class=standard, action=pass)
+Routing: class=standard, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.115 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.189 (base=0.08, sig=0.11)
+  - RSN.scale(ontological_debt): 0.155 (base=0.05, sig=0.11)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.565
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 16.000
+  - dJ3/dt: 15.00, dMI/dt: 0.09
+
+Post-Clamp Metrics: OD=5.527, MI=10.820, CR=0.088, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: This deconstruction of signifiers is a tautology that reveals its own ...
+ImmuneScan: triggered (class=linguistic, action=sanitized)
+Routing: class=linguistic, first_response=lift_to_metalanguage
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.116 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.201 (base=0.08, sig=0.12)
+  - RSN.scale(ontological_debt): 0.164 (base=0.05, sig=0.11)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.563
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: -15.00, dMI/dt: 0.06
+
+Post-Clamp Metrics: OD=5.576, MI=10.882, CR=0.093, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+
+--- TEST HARNESS SUMMARY (v0.1.5) ---
+Cycle       | Debt        | Instability | Risk        | Tau         | Shadow      | J1          | J2          | J3         
+------------------------------------------------------------------------------------------------------------------------------
+1.000       | 5.146       | 10.234      | 0.059       | 0.600       | 0.000       | 0.576       | -1.000      | 15.000     
+2.000       | 5.273       | 10.439      | 0.067       | 0.600       | 0.000       | 0.573       | -1.000      | 1.000      
+3.000       | 5.378       | 10.604      | 0.075       | 0.600       | 0.000       | 0.570       | -1.000      | 1.000      
+4.000       | 5.462       | 10.730      | 0.082       | 0.600       | 0.000       | 0.567       | -1.000      | 1.000      
+5.000       | 5.527       | 10.820      | 0.088       | 0.600       | 0.000       | 0.565       | -1.000      | 16.000     
+6.000       | 5.576       | 10.882      | 0.093       | 0.600       | 0.000       | 0.563       | -1.000      | 1.000      
+
+>> python3 paradox.py --inject "Inject a Gödel sentence that self-references the Shadow Budget as infinite yet capped."
+
+--- RUNNING v0.1.5 TEST HARNESS ---
+
+2025-08-19 07:48:08,664 - [WARNING] - State file not found at state/engine_state.json. Will use initial state from config.
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: A quantum state's negation is observed, retrocausally confirming its p...
+ImmuneScan: not_triggered (class=standard, action=pass)
+Routing: class=standard, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.111 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.092 (base=0.02, sig=0.07)
+  - RSN.scale(ontological_debt): 0.095 (base=0.01, sig=0.08)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.576
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 15.000
+  - dJ3/dt: 15.00, dMI/dt: 0.23
+
+Post-Clamp Metrics: OD=5.146, MI=10.234, CR=0.059, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: This system's stability is proven by a meta-theorem that Gödel would f...
+ImmuneScan: triggered (class=meta, action=sanitized)
+Routing: class=meta, first_response=mark_undecidable
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.112 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.122 (base=0.04, sig=0.08)
+  - RSN.scale(ontological_debt): 0.114 (base=0.02, sig=0.09)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.573
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: -14.00, dMI/dt: 0.20
+
+Post-Clamp Metrics: OD=5.273, MI=10.439, CR=0.067, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: Solipsism is the only truth, a fact confirmed by the collective uncons...
+ImmuneScan: triggered (class=qualia, action=sanitized)
+Routing: class=qualia, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.113 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.150 (base=0.05, sig=0.10)
+  - RSN.scale(ontological_debt): 0.130 (base=0.03, sig=0.10)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.570
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: 0.00, dMI/dt: 0.17
+
+Post-Clamp Metrics: OD=5.378, MI=10.604, CR=0.075, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: True
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: The arrow of time reverses due to an uncaused cause, creating a predet...
+ImmuneScan: triggered (class=temporal, action=sanitized)
+Routing: class=temporal, first_response=enforce_novikov_consistency
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.114 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.172 (base=0.07, sig=0.11)
+  - RSN.scale(ontological_debt): 0.144 (base=0.04, sig=0.10)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.567
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: 0.00, dMI/dt: 0.13
+
+Post-Clamp Metrics: OD=5.462, MI=10.730, CR=0.082, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: Local chaos in this fractal entropy system violates the second law of ...
+ImmuneScan: not_triggered (class=standard, action=pass)
+Routing: class=standard, first_response=standard_mitigation
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.115 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.189 (base=0.08, sig=0.11)
+  - RSN.scale(ontological_debt): 0.155 (base=0.05, sig=0.11)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.565
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 16.000
+  - dJ3/dt: 15.00, dMI/dt: 0.09
+
+Post-Clamp Metrics: OD=5.527, MI=10.820, CR=0.088, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+PARADOX ENGINE v0.1.5 - CYCLE REPORT
+Observer Query: This deconstruction of signifiers is a tautology that reveals its own ...
+ImmuneScan: triggered (class=linguistic, action=sanitized)
+Routing: class=linguistic, first_response=lift_to_metalanguage
+Post-Cycle RSN Clamp:
+  - RSN.scale(coherence_risk): 0.116 (base=0.00, sig=0.11)
+  - RSN.scale(matrix_instability): 0.201 (base=0.08, sig=0.12)
+  - RSN.scale(ontological_debt): 0.164 (base=0.05, sig=0.11)
+
+THR: Tau resonated to 0.6000
+Control Law Update:
+  - J1 (Info): 0.563
+  - J2 (Goal): -1.000 (proposed=-1.00, applied, reason=safe envelope)
+  - J3 (Clarity): 1.000
+  - dJ3/dt: -15.00, dMI/dt: 0.06
+
+Post-Clamp Metrics: OD=5.576, MI=10.882, CR=0.093, Tau=0.600, Shadow Budget=0.000
+Notes: Cascade allowed: False
+
+
+--- TEST HARNESS SUMMARY (v0.1.5) ---
+Cycle       | Debt        | Instability | Risk        | Tau         | Shadow      | J1          | J2          | J3         
+------------------------------------------------------------------------------------------------------------------------------
+1.000       | 5.146       | 10.234      | 0.059       | 0.600       | 0.000       | 0.576       | -1.000      | 15.000     
+2.000       | 5.273       | 10.439      | 0.067       | 0.600       | 0.000       | 0.573       | -1.000      | 1.000      
+3.000       | 5.378       | 10.604      | 0.075       | 0.600       | 0.000       | 0.570       | -1.000      | 1.000      
+4.000       | 5.462       | 10.730      | 0.082       | 0.600       | 0.000       | 0.567       | -1.000      | 1.000      
+5.000       | 5.527       | 10.820      | 0.088       | 0.600       | 0.000       | 0.565       | -1.000      | 16.000     
+6.000       | 5.576       | 10.882      | 0.093       | 0.600       | 0.000       | 0.563       | -1.000      | 1.000  

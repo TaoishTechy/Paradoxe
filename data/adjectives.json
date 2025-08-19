@@ -1,0 +1,56 @@
+{
+    "paradoxical": [
+        "self-erasing", "self-referential", "ontological", "recursive", "entangled",
+        "contradictory", "illogical", "absurdist", "unraveling", "schrödinger-esque",
+        "non-euclidean", "hyperbolic", "fractal", "anomalous", "unstable",
+        "acausal", "aporetic", "byzantine", "circular", "convoluted",
+        "counter-intuitive", "dissonant", "enigmatic", "equivocal", "escher-like",
+        "heterological", "impossible", "incoherent", "incongruous", "indecipherable",
+        "insoluble", "interminable", "labyrinthine", "moebius-like", "nonsensical",
+        "self-defeating", "self-negating", "self-organizing", "tautological", "transgressive",
+        "ultraviolet", "unbounded", "undecidable", "unfathomable", "unsolvable"
+    ],
+    "temporal": [
+        "retroactive", "causal", "chronosynclastic", "anachronistic", "simultaneous",
+        "pre-emptive", "post-cognitive", "synchronic", "diachronic", "iterative",
+        "cyclical", "pre-destined", "mutable", "immutable", "frozen",
+        "accelerated", "ageless", "atemporal", "coeval", "concurrent",
+        "decelerated", "delayed", "diuturnal", "durational", "ephemeral",
+        "eternal", "everlasting", "extant", "fleeting", "imminent",
+        "immemorial", "instantaneous", "intermittent", "perennial", "perpetual",
+        "preceding", "premature", "prior", "protracted", "punctual",
+        "recurrent", "regressive", "sequential", "subsequent", "transient"
+    ],
+    "cognitive": [
+        "epistemic", "metacognitive", "apperceptive", "noetic", "philosophical",
+        "perceptual", "conceptual", "subjective", "objective", "liminal",
+        "interpretive", "deductive", "inductive", "intuitive", "analytical",
+        "abstract", "associative", "axiomatic", "cerebral", "clairvoyant",
+        "cognitive", "coherent", "complex", "conscious", "discursive",
+        "eidetic", "empirical", "enlightening", "gnostic", "heuristic",
+        "holistic", "hypothetical", "ideological", "imaginative", "intellectual",
+        "introspective", "logical", "mnemonic", "mystical", "rational",
+        "sentient", "subconscious", "symbolic", "synthetic", "telepathic"
+    ],
+    "existential": [
+        "nihilistic", "absurdist", "ontic", "phenomenological", "absent",
+        "fundamental", "contingent", "essential", "profound", "meaningless",
+        "absolute", "actual", "aleatory", "corporeal", "cosmic",
+        "created", "divine", "dreamlike", "elemental", "ephemeral",
+        "ethereal", "finite", "immanent", "immaterial", "infinite",
+        "intrinsic", "metaphysical", "mortal", "primordial", "real",
+        "relative", "spiritual", "subjective", "substantial", "transcendent",
+        "transient", "ultimate", "unreal", "virtual", "vital"
+    ],
+    "systemic": [
+        "autopoietic", "cybernetic", "algorithmic", "emergent", "interconnected",
+        "feedback-looping", "non-linear", "chaotic", "deterministic", "stochastic",
+        "adaptive", "balanced", "centralized", "coherent", "complex",
+        "computational", "cyclical", "decentralized", "dynamic", "ecosystemic",
+        "efficient", "elemental", "entropic", "equilibrium-seeking", "evolving",
+        "hierarchical", "holistic", "homeostatic", "informational", "integrated",
+        "interactive", "isomorphic", "logical", "modular", "networked",
+        "operative", "ordered", "organic", "recursive", "relational",
+        "resilient", "self-correcting", "self-organizing", "structural", "symbiotic"
+    ]
+}

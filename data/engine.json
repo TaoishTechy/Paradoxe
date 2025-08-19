@@ -1,0 +1,88 @@
+{
+    "enhancement_functions": [
+        {
+            "name": "recursive_entanglement",
+            "description": "Adds self-referential complexity, making the paradox feed back into itself.",
+            "probability": 0.7
+        },
+        {
+            "name": "temporal_folding",
+            "description": "Introduces time-based recursion, where events influence their own past or future.",
+            "probability": 0.6
+        },
+        {
+            "name": "ontological_weaponization",
+            "description": "Makes the paradox actively hostile or capable of altering reality through its nature.",
+            "probability": 0.5
+        },
+        {
+            "name": "quantum_superposition",
+            "description": "Adds quantum mechanical elements, implying multiple contradictory states simultaneously.",
+            "probability": 0.65
+        },
+        {
+            "name": "meta_cognitive_layer",
+            "description": "Adds awareness of being a paradox, allowing it to reflect on its own existence.",
+            "probability": 0.55
+        },
+        {
+            "name": "transfinite_recursion",
+            "description": "Extends recursion beyond infinity, suggesting an unending, escalating paradoxical state.",
+            "probability": 0.45
+        },
+        {
+            "name": "apophasis_engine",
+            "description": "Makes denial strengthen the paradox, where attempts to refute it validate its truth.",
+            "probability": 0.6
+        },
+        {
+            "name": "anthropic_entanglement",
+            "description": "Binds the paradox to consciousness, making its observation or comprehension part of its mechanism.",
+            "probability": 0.7
+        },
+        {
+            "name": "semantic_event_horizon",
+            "description": "Creates information black holes, where understanding the paradox leads to loss of other knowledge.",
+            "probability": 0.5
+        },
+        {
+            "name": "axiomatic_parasitism",
+            "description": "Embeds in fundamental logic, corrupting the very rules by which reality is understood.",
+            "probability": 0.65
+        },
+        {
+            "name": "epistemic_collapse",
+            "description": "Causes a breakdown in knowledge, making certainty impossible.",
+            "probability": 0.58
+        },
+        {
+            "name": "narrative_inversion",
+            "description": "Flips the story's inherent logic, making beginnings endings and causes effects.",
+            "probability": 0.52
+        },
+        {
+            "name": "probabilistic_destabilization",
+            "description": "Manipulates likelihoods, making improbable events certain and certain events impossible.",
+            "probability": 0.62
+        },
+        {
+            "name": "observer_dependency",
+            "description": "The paradox only exists or changes when observed or thought about.",
+            "probability": 0.68
+        },
+        {
+            "name": "entropic_reversal",
+            "description": "Reverses the flow of chaos, leading to perfect, but impossible, order.",
+            "probability": 0.48
+        }
+    ],
+    "generation_params": {
+        "complexity": 10,
+        "recursion_depth": 7,
+        "symbolic_density": 10,
+        "mechanism_min": 3,
+        "mechanism_max": 6,
+        "consequence_min": 3,
+        "consequence_max": 5
+    }
+}

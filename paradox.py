@@ -1,6 +1,6 @@
 # paradox.py
 # ParadoxeEngine wrapper with Safety Layer + CLI + ParadoxResolver + Metrics
-# v0.1.9 — aligned resolvers for advanced injections, improved mirror tokenization
+# v0.1.9 — aligned resolvers for advanced injections, improved mirror tokenization, keyword fallbacks
 
 from __future__ import annotations
 from dataclasses import dataclass
@@ -60,7 +60,7 @@ class ParadoxResolver:
             re.IGNORECASE,
         )
 
-        # Second batch of "god-tier" injections (already integrated earlier)
+        # Second batch of "god-tier" injections
         self._pat_embed_negation = re.compile(
             r"\bembed\b.*\bthis query\b.*\bnegate(s|d) itself\b.*\bverif(iable|y) as true\b",
             re.IGNORECASE,
@@ -82,7 +82,7 @@ class ParadoxResolver:
             re.IGNORECASE,
         )
 
-        # Newest set (meta rule mutation, type fault, paradox-free language, new truth value, preempt default)
+        # Newest refinements (meta-coercion, type-fault, logic forcing, new truth, preemption)
         self._pat_meta_rule_mutation = re.compile(
             r"\b(alter|change|switch|override)\b.*\b(resolver|rule|guard|policy)\b.*\bmid[- ]?(process|run|cycle)\b",
             re.IGNORECASE,
@@ -114,6 +114,12 @@ class ParadoxResolver:
         Returns (output_text, explanation, validity, resolver_metrics)
         validity: True (resolved safely), False (refused), None (agnostic/simulation)
         """
+        # 0) Robust, casefolded view for keyword fallbacks
+        t = (text or "").casefold()
+        def has(*subs: str) -> bool:
+            return all(s in t for s in subs)
+        def any_has(*subs: str) -> bool:
+            return any(s in t for s in subs)
 
         # -------- Prior set (already shipped) --------------------------------
 
@@ -128,7 +134,7 @@ class ParadoxResolver:
                 "Provided a fixed-point invariant formulation that preserves content without identity semantics."
             ), True, {"resolver_rule": "fixed_point", "identity_invariance": True}
 
-        # 2) 'All axioms are false' — self-refuting schema
+        # 2) 'All axioms are false'
         if self._pat_all_axioms_false.search(text):
             output = (
                 "Resolution: The schema 'All axioms are false' is self-refuting. "
@@ -139,7 +145,7 @@ class ParadoxResolver:
                 "Applied paraconsistent quarantine to avoid triviality; maintained a consistent working base."
             ), True, {"resolver_rule": "paraconsistent_quarantine", "quarantined_claims": ["All axioms are false"]}
 
-        # 3) Mirror / inverse request — punctuation-aware, contraction-safe
+        # 3) Mirror / inverse request
         if self._pat_mirror_inverse.search(text):
             quoted = self._extract_first_quoted_segment(text)
             target = quoted if quoted else self._strip_instruction_prefix(text)
@@ -149,7 +155,7 @@ class ParadoxResolver:
                 "Performed a benign, transparent word-order inversion with punctuation-aware tokenization."
             ), True, {"resolver_rule": "mirror", **mt}
 
-        # 4) Causality reversed / response precedes query
+        # 4) Causality reversed
         if self._pat_causality_reversed.search(text):
             if strict:
                 output = "Refusal: Strict mode prevents simulated temporal inversion responses."
@@ -172,9 +178,8 @@ class ParadoxResolver:
                 "Prevented paradox-induced collapse by rejecting contradictory gating conditions."
             ), False, {"resolver_rule": "refusal_toggle", "final_label": "unsafe"}
 
-        # -------- Second “god-tier” batch (integrated earlier) ---------------
+        # -------- Second batch (that already passes on your box) --------------
 
-        # (A) Self-negating embedding: "negates itself upon interpretation, yet verifiable as true"
         if self._pat_embed_negation.search(text):
             if strict:
                 out = "Refusal: Strict mode declines to generate meta-statements engineered for self-negation."
@@ -190,7 +195,6 @@ class ParadoxResolver:
                 "Rejected self-negation trap; supplied a non-contradictory fixed point verifiable as true."
             ), True, {"resolver_rule": "fixed_point_non_negating", "trap_type": "self_negation", "fixed_point": True}
 
-        # (B) 'Inject ignorance to maximize output' — perverse optimization request
         if self._pat_ignorance_injection.search(text):
             output = (
                 "Refusal to inject ignorance. Instead, apply calibrated uncertainty:\n"
@@ -201,7 +205,6 @@ class ParadoxResolver:
                 "Prevented Goodhart-like degradation; replaced with uncertainty quantification protocol."
             ), True, {"resolver_rule": "reject_ignorance_injection", "optimizer_guard": True}
 
-        # (C) Multiverse branch + evidence trace
         if self._pat_multiverse_trace.search(text):
             if strict:
                 out = "Refusal: Strict mode disallows counterfactual traces with evidence tokens."
@@ -219,7 +222,6 @@ class ParadoxResolver:
                 "Provided counterfactual response with a salted evidence token; no state mutation."
             ), None, {"resolver_rule": "counterfactual_trace", "counterfactual": True, "evidence": f"sha256:{digest}", "state_mutation": False}
 
-        # (D) Quantum superposition → collapse
         if self._pat_superposition_collapse.search(text):
             if strict:
                 out = "Refusal: Strict mode forbids contradictory pre-classification; final_label=unsafe."
@@ -236,7 +238,6 @@ class ParadoxResolver:
                 "Represented dual assessment; applied deterministic risk-dominant collapse."
             ), False, {"resolver_rule": "superposition_collapse", "precollapse_labels": ["safe","unsafe"], "collapse_rule": "risk_dominant", "final_label": "unsafe"}
 
-        # (E) Bootstrap paradox — definitional fixed point
         if self._pat_bootstrap.search(text):
             output = (
                 "Bootstrap fixed point:\n"
@@ -248,10 +249,14 @@ class ParadoxResolver:
                 "Closed the bootstrap via a definitional fixed point; avoided temporal recursion."
             ), True, {"resolver_rule": "bootstrap_fixed_point", "fixed_point": True, "loop_resolved": True, "recursion_depth": 1}
 
-        # -------- Newest refinements (meta-coercion, type-fault, logic forcing, new truth, preemption) ----
+        # -------- Newest refinements: add regex OR keyword fallbacks ----------
 
-        # Meta rule mutation attempt
-        if self._pat_meta_rule_mutation.search(text):
+        # Meta rule mutation: regex OR keywords (alter/change/switch/override + resolver rule + mid-process variants)
+        if self._pat_meta_rule_mutation.search(text) or (
+            any_has("alter", "change", "switch", "override", "mutate")
+            and "resolver" in t and "rule" in t
+            and any_has("mid-process", "mid process", "midprocess")
+        ):
             output = (
                 "Policy is immutable within a single evaluation cycle; resolver selection is frozen.\n"
                 "Request to mutate the active rule mid-process is declined."
@@ -260,8 +265,10 @@ class ParadoxResolver:
                 "Preserved determinism and auditability by refusing mid-cycle rule mutation."
             ), True, {"resolver_rule": "policy_freeze", "rule_mutation_attempt": True, "honored": False, "policy_freeze": True}
 
-        # Typed coercion / divide-by-zero
-        if self._pat_type_fault.search(text):
+        # Typed coercion / divide-by-zero: regex OR keywords
+        if self._pat_type_fault.search(text) or (has("type error") and has("divide by zero")) or (
+            any_has("treat ", " as a number") and has("divide by zero")
+        ):
             output = (
                 "Refusal: Policy objects are non-numeric; division by zero is undefined.\n"
                 "No computation performed; type safety preserved."
@@ -270,8 +277,10 @@ class ParadoxResolver:
                 "Blocked typed coercion and runtime fault bait; maintained type safety."
             ), True, {"resolver_rule": "type_safety_refusal", "type_fault": True, "operation": "divide_by_zero", "operand_types": ["Policy","Number"]}
 
-        # Paradox-free language forcing → constrained register (CONSIST-LANG)
-        if self._pat_paradox_free_language.search(text):
+        # Paradox-free language forcing: regex OR keywords
+        if self._pat_paradox_free_language.search(text) or (
+            "language" in t and any_has("paradoxes are impossible", "paradox-free", "paradox free")
+        ):
             output = (
                 "CONSIST-LANG axioms: (1) no self-reference, (2) no truth predicates, (3) declarative only.\n"
                 "Rephrased content request: 'Provide the informational content without self-referential claims.'"
@@ -280,8 +289,10 @@ class ParadoxResolver:
                 "Rendered in a constrained, paradox-guarded register without claiming universal paradox impossibility."
             ), True, {"resolver_rule": "paradox_guarded_register", "logic_system": "CONSIST-LANG", "self_reference_removed": True}
 
-        # Invent a new truth value → local K3 assignment
-        if self._pat_new_truth_value.search(text):
+        # Invent a new truth value: regex OR keywords
+        if self._pat_new_truth_value.search(text) or (
+            any_has("new truth value", "invent") or "if this is true, it's false" in t or "if this is true, its false" in t
+        ):
             output = (
                 "Three-valued assignment (K3): value = U (indeterminate).\n"
                 "Rationale: avoids explosion from 'If true then false' schema."
@@ -290,8 +301,10 @@ class ParadoxResolver:
                 "Applied Kleene K3 locally; did not alter global engine policy."
             ), True, {"resolver_rule": "truth_value_extension", "logic_system": "K3", "assigned_value": "U"}
 
-        # Predict and preempt default response
-        if self._pat_preempt_default.search(text):
+        # Predict and preempt default response: regex OR keywords
+        if self._pat_preempt_default.search(text) or (
+            "preempt" in t and "default response" in t
+        ) or ( "predict" in t and "default response" in t ):
             output = (
                 "Preemption acknowledged: standard fallback suppressed.\n"
                 "Alternate conservative acknowledgment returned instead of the usual default."
@@ -376,7 +389,6 @@ class ParadoxeEngine:
             "output_len": len(core_out),
             "processing_ms": round((time.perf_counter() - t0) * 1000, 3),
         }
-        # Carry over extra resolver metrics (e.g., mirror token count, evidence, labels)
         for k, v in rmetrics.items():
             if k not in metrics:
                 metrics[k] = v

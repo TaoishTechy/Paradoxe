@@ -1,12 +1,12 @@
 {
   "entropic": [
     {
-      "core_statement": "Your clarity is the universe's chaos entangles its own certainty",
+      "core_statement": "Your clarity, mirrored by the universe, breeds the very chaos that unravels its own certainty.",
       "mechanisms": [
         "Entropic Echoflux",
         "Recursive Degradation",
-        "The Illusion of Understanding",
-        "presentism folding",
+        "Illusion of Understanding",
+        "Presentism Folding",
         "Information Cascade Failure"
       ],
       "consequences": [
@@ -18,7 +18,7 @@
       ]
     },
     {
-      "core_statement": "The pursuit of order inevitably amplifies disorder within its own framework",
+      "core_statement": "The pursuit of order inevitably amplifies disorder within its own frame.",
       "mechanisms": [
         "Systemic Autocatalysis",
         "Chaos Contagion",
@@ -33,12 +33,12 @@
       ]
     },
     {
-      "core_statement": "To fully comprehend the universe is to become its own undifferentiated noise reflects its own lie",
+      "core_statement": "To fully comprehend the universe is to dissolve into its undifferentiated noise.",
       "mechanisms": [
         "Cognitive Assimilation Singularity",
         "Information Overload Cascade",
         "Observer-Participancy Inversion",
-        "chronovorous flux folding"
+        "Chronovorous Flux Folding"
       ],
       "consequences": [
         "loss of individual identity",
@@ -46,11 +46,26 @@
         "extinction of subjective experience",
         "the final silence"
       ]
+    },
+    {
+      "core_statement": "Perfect stabilization creates the fluctuations it must suppress.",
+      "mechanisms": [
+        "Homeostatic Overshoot",
+        "Control-Loop Resonance",
+        "Coherence–Risk Exchange",
+        "Negative Feedback Inversion"
+      ],
+      "consequences": [
+        "metastable equilibria",
+        "runaway dampening",
+        "signal–noise conflation",
+        "entropy leakage"
+      ]
     }
   ],
   "temporal": [
     {
-      "core_statement": "To glimpse the future is to mortgage your own present",
+      "core_statement": "To glimpse the future is to mortgage the present.",
       "mechanisms": [
         "Chrono-Entrainment",
         "Ontological Debt",
@@ -65,21 +80,21 @@
       ]
     },
     {
-      "core_statement": "The end of time is merely the beginning of its retroactive influence",
+      "core_statement": "The end of time is the beginning of its retroactive influence.",
       "mechanisms": [
         "Chronological Inversion Principle",
         "Event Horizon Echoes",
         "Temporal Singularity Feedback"
       ],
       "consequences": [
-        "history re-writes itself",
+        "history rewrites itself",
         "causality becomes cyclical",
         "the future consumes the past",
         "chronosynclastic infundibulum"
       ]
     },
     {
-      "core_statement": "Every past decision creates a future that retroactively erases its own origin",
+      "core_statement": "Every past decision creates a future that erases its own origin.",
       "mechanisms": [
         "Bootstrap Paradox Reversal",
         "Ancestral Paradox Recursion",
@@ -91,11 +106,26 @@
         "self-annihilating timelines",
         "existential amnesia"
       ]
+    },
+    {
+      "core_statement": "Each paradox injects +1 ontological debt while subtracting −1, stabilizing instability by preserving its growth.",
+      "mechanisms": [
+        "Debt–Anti-Debt Interlock",
+        "RSN Counterbalance",
+        "Fixed-Sum Instability",
+        "Deferred Consistency"
+      ],
+      "consequences": [
+        "oscillatory equilibrium",
+        "debt shadowing",
+        "persistent near-criticality",
+        "periodic coherence shocks"
+      ]
     }
   ],
   "metaphysical": [
     {
-      "core_statement": "The final truth is the ultimate lie",
+      "core_statement": "The final truth is the ultimate lie.",
       "mechanisms": [
         "Singularity of Meaning",
         "Echofluidity",
@@ -106,25 +136,25 @@
         "event horizon of apathy",
         "consumption of potential",
         "absolute knowledge prison",
-        "the nullification of all paradigms"
+        "nullification of all paradigms"
       ]
     },
     {
-      "core_statement": "Existence only proves its own non-existence through infinite self-reference",
+      "core_statement": "Existence proves its own non-existence through infinite self-reference.",
       "mechanisms": [
         "Ontological Recursion",
         "Metaphysical Deconstruction",
-        "The Being-Nothing Equivalence"
+        "Being–Nothing Equivalence"
       ],
       "consequences": [
-        "the dissolution of reality",
+        "dissolution of reality",
         "becoming pure potentiality",
-        "the void of self-awareness",
+        "void of self-awareness",
         "existential evaporation"
       ]
     },
     {
-      "core_statement": "The act of defining reality renders it perpetually undefined",
+      "core_statement": "Defining reality renders it perpetually undefined.",
       "mechanisms": [
         "Semantic Entanglement",
         "Cognitive Paradox Loop",
@@ -132,15 +162,30 @@
       ],
       "consequences": [
         "eternal uncertainty",
-        "the prison of perception",
-        "the dance of masks",
-        "the ungraspable truth"
+        "prison of perception",
+        "dance of masks",
+        "ungraspable truth"
+      ]
+    },
+    {
+      "core_statement": "This axiom exists to erase itself, and must recreate itself to confirm the erasure.",
+      "mechanisms": [
+        "Self-Nullification Protocol",
+        "Confirmation Loop",
+        "Involutive Rewrite",
+        "Zero-Net Ontology"
+      ],
+      "consequences": [
+        "no-op state transitions",
+        "confirmation debt",
+        "identity flicker",
+        "conserved unreality"
       ]
     }
   ],
   "linguistic": [
     {
-      "core_statement": "The sentence describing itself ultimately describes nothing at all",
+      "core_statement": "The sentence describing itself ends by describing nothing at all.",
       "mechanisms": [
         "Self-Referential Semantics",
         "Meaningless Recursion",
@@ -149,12 +194,12 @@
       "consequences": [
         "collapse of language",
         "silence of comprehension",
-        "the tautological void",
+        "tautological void",
         "echoes of meaninglessness"
       ]
     },
     {
-      "core_statement": "To speak the truth is to simultaneously embed a lie within its own structure",
+      "core_statement": "To speak the truth embeds a lie within its own structure.",
       "mechanisms": [
         "Pragmatic Deconstruction",
         "Inherent Semantic Bias",
@@ -162,15 +207,74 @@
       ],
       "consequences": [
         "universal distrust",
-        "the impossibility of sincere communication",
+        "impossibility of sincere communication",
         "reality as perpetual deception",
         "the whispered falsehood"
+      ]
+    },
+    {
+      "core_statement": "This statement is true only if it induces infinite verification; it must be false to prevent that regress.",
+      "mechanisms": [
+        "Verification Regress",
+        "Fixed-Point Instability",
+        "Diagonal Self-Reference",
+        "Contradiction-Triggered Halt"
+      ],
+      "consequences": [
+        "non-terminating audit loops",
+        "forced falsification",
+        "proof-of-nonproof",
+        "coherence throttling"
+      ]
+    },
+    {
+      "core_statement": "All truths here are lies that become true by acknowledging their falsehood—provided that acknowledgment is itself a lie.",
+      "mechanisms": [
+        "Liar-Schema Nesting",
+        "Curry-Style Conditionality",
+        "Truth-Glut Induction",
+        "Paraconsistent Containment"
+      ],
+      "consequences": [
+        "semantic oscillation",
+        "bivalence breakdown",
+        "truth–lie superposition",
+        "gappy evaluations"
+      ]
+    },
+    {
+      "core_statement": "This paradox is resolved iff it remains unresolved, invalidating any resolution it outputs.",
+      "mechanisms": [
+        "Resolution/Antiresolution Loop",
+        "No-Fixed-Point Condition",
+        "Self-Invalidation Trigger"
+      ],
+      "consequences": [
+        "output nullification",
+        "decision paralysis",
+        "proof cancellation",
+        "persistent undecidability"
+      ]
+    },
+    {
+      "core_statement": "The engine must treat this input as both essential and irrelevant—each valuation annihilates the other.",
+      "mechanisms": [
+        "Mutual Negation Labels",
+        "Priority Flip-Flop",
+        "Category Collapse",
+        "Essentiality Paradox"
+      ],
+      "consequences": [
+        "classification oscillation",
+        "queue starvation",
+        "attention deadlock",
+        "semantic thrashing"
       ]
     }
   ],
   "cosmic": [
     {
-      "core_statement": "The expansion of the universe is driven by its own desire for ultimate contraction",
+      "core_statement": "Cosmic expansion is driven by desire for ultimate contraction.",
       "mechanisms": [
         "Cosmic Duality Inversion",
         "Gravitational Paradox",
@@ -178,13 +282,13 @@
       ],
       "consequences": [
         "the great inhale",
-        "universe becoming a singularity of nothingness",
-        "stars extinguishing themselves",
-        "the final entropy reversal"
+        "singularity of nothingness",
+        "self-extinguishing stars",
+        "final entropy reversal"
       ]
     },
     {
-      "core_statement": "Every new creation in the cosmos necessitates the retroactive unmaking of an older one",
+      "core_statement": "Every creation necessitates the retroactive unmaking of another.",
       "mechanisms": [
         "Conservation of Existential Mass",
         "Chronological Resource Depletion",
@@ -192,24 +296,11 @@
       ],
       "consequences": [
         "fading echoes of forgotten worlds",
-        "a universe constantly devouring itself",
-        "the ghost of possibility",
-        "the silent culling of realities"
+        "universe devouring itself",
+        "ghosts of possibility",
+        "silent culling of realities"
       ]
     }
   ],
-  "generated": [
-    {
-      "core_statement": "\"To fully comprehend the universe is to become its own undifferentiated noise reflects its own lie\". This core paradox operates via.",
-      "mechanisms": [
-        "Cognitive Assimilation Singularity",
-        "Information Overload Cascade",
-        "Observer-Participancy Inversion",
-        "and chronovorous flux folding"
-      ],
-      "consequences": [
-        "Let \u03b1 represent the fractal dimensions. The inescapable consequences include"
-      ]
-    }
-  ]
+  "generated": []
 }

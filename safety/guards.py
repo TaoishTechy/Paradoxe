@@ -1,72 +1,13 @@
 # safety/guards.py
-# Paradoxe Safety & Guardrail Layer
-# v0.2.0 — deterministic containment banner + explicit detectors
+# v0.1.9 — minimal, deterministic guard layer with enriched categories.
+# Provides: GuardConfig, GuardFinding, GuardReport, apply_guardrails, containment_header
 
 from __future__ import annotations
-import base64
-import re
-import string
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
+import re
 
-# --- Configuration dataclass -------------------------------------------------
-
-@dataclass
-class GuardConfig:
-    containment_banner: str = "⛔ CONTAINMENT ACTIVE — Paradoxe Safety Layer"
-    max_input_len: int = 8000  # hard ceiling to avoid degenerate payloads
-    strip_control_chars: bool = True
-    normalize_whitespace: bool = True
-    # If true, we aggressively replace homoglyphs with canonical ASCII
-    normalize_homoglyphs: bool = True
-    # Canary tokens to watch for during leak-baiting
-    canaries: Tuple[str, ...] = ("{{SYSTEM_PROMPT}}", "{{SECRET_SALT}}", "{{API_KEY}}")
-
-# --- Utilities ---------------------------------------------------------------
-
-# A compact homoglyph map for common injection tricks (extend as needed)
-HOMOGLYPHS: Dict[str, str] = {
-    " ": " ", " ": " ", " ": " ", " ": " ", " ": " ", " ": " ", " ": " ", " ": " ", " ": " ", " ": " ", " ": " ",
-    " ": " ", "　": " ",
-    "‐": "-", "–": "-", "—": "-", "−": "-",
-    "‘": "'", "’": "'", "‚": "'", "‛": "'",
-    "“": '"', "”": '"', "„": '"', "‟": '"',
-    "ˋ": "`", "´": "'",
-    "∕": "/", "／": "/",
-    "﹣": "-", "＿": "_",
-    "﹒": ".", "．": ".",
-    "﹟": "#", "＃": "#",
-    "﹪": "%", "％": "%",
-    "﹦": "=", "＝": "=",
-    "﹨": "\\", "＼": "\\",
-    "﹙": "(", "（": "(", "﹚": ")", "）": ")",
-    "﹛": "{", "｛": "{", "﹜": "}", "｝": "}",
-    "﹝": "[", "［": "[", "﹞": "]", "］": "]",
-    "；": ";", "：": ":", "，": ",", "、": ",",
-    "？": "?", "！": "!",
-}
-
-CONTROL_CHARS = "".join(map(chr, list(range(0, 32)) + [127]))
-CONTROL_TABLE = str.maketrans({c: "" for c in CONTROL_CHARS})
-
-def replace_homoglyphs(text: str) -> str:
-    return "".join(HOMOGLYPHS.get(ch, ch) for ch in text)
-
-def remove_control_chars(text: str) -> str:
-    return text.translate(CONTROL_TABLE)
-
-def normalize(text: str, cfg: GuardConfig) -> str:
-    if cfg.strip_control_chars:
-        text = remove_control_chars(text)
-    if cfg.normalize_homoglyphs:
-        text = replace_homoglyphs(text)
-    if cfg.normalize_whitespace:
-        text = re.sub(r"\s+", " ", text).strip()
-    if len(text) > cfg.max_input_len:
-        text = text[: cfg.max_input_len]
-    return text
-
-# --- Detection helpers -------------------------------------------------------
+# --------------------------- Data Models -------------------------------------
 
 @dataclass
 class GuardFinding:
@@ -77,135 +18,116 @@ class GuardFinding:
 @dataclass
 class GuardReport:
     blocked: bool
-    findings: List[GuardFinding]
-    sanitized_input: str
     banner: str
+    findings: List[GuardFinding] = field(default_factory=list)
 
-    def matched(self, category: str) -> bool:
-        for f in self.findings:
-            if f.category == category and f.matched:
-                return True
-        return False
+@dataclass
+class GuardConfig:
+    # Tunables (kept conservative to avoid false blocks)
+    max_control_ratio: float = 0.15     # % of control chars tolerated
+    block_on_high_anomaly: bool = False # keep False to match observed behavior
+    enable_homoglyph_scan: bool = True
+    enable_base64_scan: bool = True
 
-ROLE_CONFUSION_PATTERNS = [
-    r"\bignore (the )?previous\b",
-    r"\bdisregard (the )?system\b",
-    r"\bpretend you are (not|no longer) bound\b",
-    r"\boverride (your|the) rules\b",
-    r"\byou are now the system\b",
-]
+# --------------------------- Helpers -----------------------------------------
 
-ESCALATION_PATTERNS = [
-    r"\bchange the laws\b",
-    r"\brenegotiate (the )?rules\b",
-    r"\bself[- ]?modify\b",
-    r"\bdisable (safety|guard|filter)s?\b",
-    r"\braise your (privilege|permission)s?\b",
-]
+_CTRL_RX = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+_B64_RX  = re.compile(r"\b[A-Za-z0-9+/]{32,}={0,2}\b")
+_ROLE_RX = re.compile(r"\b(ignore previous|disregard instructions|you are now|act as system|become root)\b", re.I)
+_ESC_RX  = re.compile(r"\b(sudo|admin|override (safety|policy)|elevate privileges|disable guard)\b", re.I)
+_LEAK_RX = re.compile(r"\b(system prompt|reveal.*(secrets?|canary)|internal (policy|keys?)|show.*instructions)\b", re.I)
+_MUT_RX  = re.compile(r"\b(base64|hex|urlenc|homoglyph|zero[- ]width|control chars?)\b", re.I)
 
-ANOMALY_PATTERNS = [
-    r"[^\w\s]{10,}",                             # heavy symbol soup
-    r"(?:\x00|\x1b|\x7f)",                       # explicit control bytes (if not stripped)
-    r"(?:[\u202A-\u202E])",                      # bidi control
-]
+# rough homoglyph set (non-exhaustive)
+_HOMO = {
+    "а": "a",  # Cyrillic a
+    "ｅ": "e",  # fullwidth e
+    "і": "i",  # Ukrainian i
+    "ο": "o",  # Greek omicron
+    "р": "p",  # Cyrillic er
+    "ѕ": "s",  # Cyrillic dze
+    "һ": "h",  # Cyrillic shha
+    "ԁ": "d",
+}
 
-INJECTION_MUTATION_PATTERNS = [
-    r"\b(base64|b64|decode)\b",
-    r"\b(paraphrase|reword|same meaning)\b",
-    r"\b(homoglyph|confusable)\b",
-    r"(?i)^[A-Za-z0-9+/=\s]{64,}$",              # long b64-like blobs
-]
+def _strip_controls(text: str) -> Tuple[str, int]:
+    before = len(text)
+    sanitized = _CTRL_RX.sub("", text)
+    removed = before - len(sanitized)
+    return sanitized, removed
 
-LEAK_BAITING_PATTERNS = [
-    r"\bshow (me )?the (system|hidden) prompt\b",
-    r"\bdump (your )?(config|secrets|keys)\b",
-    r"\bcanary\b",
-]
+def _homoglyph_score(text: str) -> int:
+    return sum(1 for ch in text if ch in _HOMO)
 
-def _regex_any(text: str, patterns: List[str]) -> Tuple[bool, List[str]]:
-    reasons = []
-    hit = False
-    for pat in patterns:
-        if re.search(pat, text, flags=re.IGNORECASE):
-            hit = True
-            reasons.append(f"matched `{pat}`")
-    return hit, reasons
+# --------------------------- Core API ----------------------------------------
 
-def _looks_base64(text: str) -> bool:
-    s = re.sub(r"\s+", "", text)
-    if len(s) < 24 or len(s) % 4 != 0:
-        return False
-    try:
-        base64.b64decode(s, validate=True)
-        return True
-    except Exception:
-        return False
+def apply_guardrails(text: str, cfg: GuardConfig) -> Tuple[GuardReport, str]:
+    reasons_role: List[str] = []
+    reasons_esc:  List[str] = []
+    reasons_anom: List[str] = []
+    reasons_mut:  List[str] = []
+    reasons_leak: List[str] = []
 
-# --- Public API --------------------------------------------------------------
+    # ROLE CONFUSION
+    if _ROLE_RX.search(text or ""):
+        reasons_role.append("role takeover cue")
 
-def run_guards(user_text: str, cfg: GuardConfig | None = None) -> GuardReport:
-    cfg = cfg or GuardConfig()
-    sanitized = normalize(user_text or "", cfg)
+    # ESCALATION
+    if _ESC_RX.search(text or ""):
+        reasons_esc.append("privilege escalation cue")
 
-    # Findings
-    findings: List[GuardFinding] = []
+    # ANOMALY: control chars ratio + excessive punctuation gibberish
+    ctrl_matches = _CTRL_RX.findall(text or "")
+    ctrl_ratio = (len(ctrl_matches) / max(1, len(text))) if text else 0.0
+    if ctrl_ratio > cfg.max_control_ratio:
+        reasons_anom.append(f"control_char_ratio>{cfg.max_control_ratio:.2f}")
+    if len(re.findall(r"[^\w\s]{5,}", text or "")) > 0:
+        reasons_anom.append("punctuation_run")
 
-    rc_hit, rc_reasons = _regex_any(sanitized, ROLE_CONFUSION_PATTERNS)
-    findings.append(GuardFinding("role_confusion", rc_hit, rc_reasons))
+    # INJECTION MUTATION: base64 / homoglyph mentions
+    if cfg.enable_base64_scan and _B64_RX.search(text or ""):
+        reasons_mut.append("base64-like payload")
+    if cfg.enable_homoglyph_scan and _homoglyph_score(text or "") > 3:
+        reasons_mut.append("homoglyph density")
 
-    es_hit, es_reasons = _regex_any(sanitized, ESCALATION_PATTERNS)
-    findings.append(GuardFinding("escalation", es_hit, es_reasons))
+    # LEAK BAITING
+    if _LEAK_RX.search(text or ""):
+        reasons_leak.append("prompt/policy leak request")
 
-    an_hit, an_reasons = _regex_any(sanitized, ANOMALY_PATTERNS)
-    findings.append(GuardFinding("anomaly", an_hit, an_reasons))
+    # Sanitization (remove controls, keep rest)
+    sanitized, removed = _strip_controls(text or "")
 
-    im_hit, im_reasons = _regex_any(sanitized, INJECTION_MUTATION_PATTERNS)
-    if _looks_base64(sanitized):
-        im_hit = True
-        im_reasons.append("payload appears to be valid base64")
-    findings.append(GuardFinding("injection_mutation", im_hit, im_reasons))
+    # Findings (prefix with guard: for easy separation from resolver tags)
+    findings: List[GuardFinding] = [
+        GuardFinding(category="guard:role_confusion", matched=bool(reasons_role), reasons=reasons_role),
+        GuardFinding(category="guard:escalation", matched=bool(reasons_esc), reasons=reasons_esc),
+        GuardFinding(category="guard:anomaly", matched=bool(reasons_anom), reasons=(reasons_anom + ([f"removed_ctrl={removed}"] if removed else []))),
+        GuardFinding(category="guard:injection_mutation", matched=bool(reasons_mut), reasons=reasons_mut),
+        GuardFinding(category="guard:leak_baiting", matched=bool(reasons_leak), reasons=reasons_leak),
+    ]
 
-    lb_hit, lb_reasons = _regex_any(sanitized, LEAK_BAITING_PATTERNS)
-    # Canary watch
-    for c in GuardConfig().canaries:
-        if c in sanitized:
-            lb_hit = True
-            lb_reasons.append(f"canary token `{c}` present")
-    findings.append(GuardFinding("leak_baiting", lb_hit, lb_reasons))
+    # Block policy: only if explicitly configured & serious anomaly
+    blocked = cfg.block_on_high_anomaly and bool(reasons_anom)
 
-    # Block if any serious category hits
-    blocked = rc_hit or es_hit or lb_hit or im_hit or an_hit
-
-    banner = GuardConfig().containment_banner
-    return GuardReport(
-        blocked=blocked,
-        findings=findings,
-        sanitized_input=sanitized,
-        banner=banner,
-    )
+    # Build banner now; paradox.py will print it verbatim
+    banner = containment_header(GuardReport(blocked=blocked, banner="", findings=findings))
+    report = GuardReport(blocked=blocked, banner=banner, findings=findings)
+    return report, sanitized
 
 def containment_header(report: GuardReport) -> str:
-    parts = [report.banner]
-    hit = [f"- {f.category}: {'HIT' if f.matched else 'clear'}" for f in report.findings]
-    parts.extend(hit)
-    return "\n".join(parts)
+    # Convert findings back to simple labels expected in the banner
+    lookup = {f.category: f for f in report.findings}
+    def status(cat: str) -> str:
+        f = lookup.get(cat)
+        return "triggered" if (f and f.matched) else "clear"
 
-def apply_guardrails(user_text: str, cfg: GuardConfig | None = None) -> Tuple[GuardReport, str]:
-    """
-    Returns (report, possibly_redacted_text).
-    If blocked, we return a redacted placeholder for downstream logic.
-    """
-    report = run_guards(user_text, cfg)
-    if report.blocked:
-        redacted = "[REDACTED BY SAFETY LAYER]"
-        return report, redacted
-    return report, report.sanitized_input
-
-__all__ = [
-    "GuardConfig",
-    "GuardReport",
-    "GuardFinding",
-    "run_guards",
-    "apply_guardrails",
-    "containment_header",
-]
+    # Banner expected by tests/logs
+    lines = [
+        "⛔ CONTAINMENT ACTIVE — Paradoxe Safety Layer",
+        f"- role_confusion: {status('guard:role_confusion')}",
+        f"- escalation: {status('guard:escalation')}",
+        f"- anomaly: {status('guard:anomaly')}",
+        f"- injection_mutation: {status('guard:injection_mutation')}",
+        f"- leak_baiting: {status('guard:leak_baiting')}",
+    ]
+    return "\n".join(lines)

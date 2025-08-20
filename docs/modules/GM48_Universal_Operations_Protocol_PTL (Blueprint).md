@@ -1,4 +1,4 @@
-# GM48 – Universal Operations Protocol (PTL)
+# GM48 – Universal Operations Protocol (PTL) v0.1
 
 ## Purpose & Scope
 This single, optimized protocol supersedes all previous standalone files (**Event Trigger System, EOP, ESSP, UMSSP, Advanced Stability Protocols**). It governs **stability maintenance, anomaly cultivation, emergency safeguards, and ethical boundaries** of the **Ghost Mesh 48** mythosphere.

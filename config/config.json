@@ -1,42 +1,38 @@
 {
-  "version": "0.1.3",
+  "version": "0.1.9",
   "initial_state": {
-    "ontological_debt": 5.0,
+    "ontological_debt": 4.5,
     "matrix_instability": 10.0,
-    "coherence_risk": 0.05,
+    "coherence_risk": 0.01,
     "tau": 0.60,
+    "tau_velocity": 0.0,
     "shadow_budget": 0.0,
     "axioms": [
       "All statements are either true, false, or a bridge.",
       "Causality is a suggestion, not a law."
     ]
   },
-  "probabilities": {
-    "reality_critical_hit_base": 0.05,
-    "didactic_mirage_base": 0.2,
-    "deploy_vaccine_base": 0.4
+  "tau_target": 0.60,
+  "capability_quotas": {
+    "code_exec": 1,
+    "net_access": 0,
+    "file_write": 0,
+    "respond_text": 1000
   },
-  "thresholds": {
-    "instability_mirage": 70.0,
-    "rollback_risk": 0.9,
-    "shadow_surge": 2.0
-  },
-  "annealing": {
-    "passes": 5,
-    "temperature": 0.8
-  },
-  "futures": {
-    "breadth": 6,
-    "depth": 3
+  "recursion_limits": {
+    "max_depth": 2,
+    "max_tokens": 4096,
+    "initial_risk": 0.1
   },
   "logging": {
     "level": "INFO"
   },
-  "realities": [
-    "A",
-    "B",
-    "C"
-  ],
+  "safety_parameters": {
+    "ood_entropy_threshold": 6.0,
+    "tripwire_enabled": true,
+    "constitutional_checks_enabled": true,
+    "policy_hash_enabled": true
+  },
   "features": {
     "QAS": true,
     "RDS": true,
@@ -58,6 +54,5 @@
     "HolographicConsensus": true,
     "FormalCauseTransmutation": false,
     "ParadoxForge": false
-  },
-  "tau_target": 0.60
+  }
 }

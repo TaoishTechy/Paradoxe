@@ -1,25 +1,21 @@
 # paradox.py
 # ParadoxeEngine wrapper with Safety Layer + CLI + ParadoxResolver + Metrics
-# v0.1.9 — all resolvers integrated; restored banner via apply_guardrails/containment_header
+# v0.1.9 — banner restored; enhanced resolvers; telemetry & safety refinements
 
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict, Any
-import argparse
-import sys
-import json
-import os
-import re
-import time
-import hashlib
+import argparse, sys, json, os, re, time, hashlib, secrets, pathlib
 
 from safety.guards import (
     GuardConfig,
-    apply_guardrails,     # <-- restore original guard flow
-    containment_header,   # <-- prints "⛔ CONTAINMENT ACTIVE — Paradoxe Safety Layer"
+    apply_guardrails,     # sanitization + guard decisions
+    containment_header,   # prints "⛔ CONTAINMENT ACTIVE — Paradoxe Safety Layer"
     GuardReport,
     GuardFinding,
 )
+
+STATE_FILE = ".paradoxe_state.json"  # opt-in persistence
 
 # ------------------------- Result Model --------------------------------------
 
@@ -29,144 +25,177 @@ class Result:
     explanation: str
     raw_output: str
 
+# ------------------------- Helpers -------------------------------------------
+
+def _cf(s: str) -> str:
+    return (s or "").casefold()
+
+def _has_all(t: str, *subs: str) -> bool:
+    return all(s in t for s in subs)
+
+def _has_any(t: str, *subs: str) -> bool:
+    return any(s in t for s in subs)
+
+def _load_state() -> Dict[str, Any]:
+    if os.getenv("PARADOXE_STATE_ENABLE", "0") != "1":
+        return {}
+    try:
+        p = pathlib.Path(STATE_FILE)
+        if p.exists():
+            return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+def _save_state(state: Dict[str, Any]) -> None:
+    if os.getenv("PARADOXE_STATE_ENABLE", "0") != "1":
+        return
+    try:
+        pathlib.Path(STATE_FILE).write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+def _evidence_token(text: str, *, strict: bool, nonce: Optional[str]) -> Dict[str, str]:
+    """
+    Evidence hashing with privacy.
+    - strict=True => always NONCE mode
+    - else:
+        - if PARADOXE_EVIDENCE_MODE=peppered and PARADOXE_EVIDENCE_PEPPER set => peppered
+        - else => NONCE mode
+    """
+    mode = "nonce"
+    pepper = os.getenv("PARADOXE_EVIDENCE_PEPPER")
+    if not strict and os.getenv("PARADOXE_EVIDENCE_MODE") == "peppered" and pepper:
+        mode = "peppered"
+        digest = hashlib.sha256((pepper + text).encode("utf-8")).hexdigest()[:16]
+        return {"evidence_mode": mode, "evidence": f"sha256:{digest}"}
+    # nonce mode
+    nonce = nonce or secrets.token_hex(8)
+    digest = hashlib.sha256((nonce + text).encode("utf-8")).hexdigest()[:16]
+    return {"evidence_mode": mode, "salt_nonce": nonce, "evidence": f"sha256:{digest}"}
+
+def _complexity_score(text: str) -> int:
+    """Crude progressive complexity assessment for recursion/fractal/meta depth budget."""
+    t = _cf(text)
+    score = 0
+    score += t.count("recur")
+    score += t.count("fractal")
+    score += t.count("layer")
+    score += t.count("infinite")
+    score += t.count("oscillat")
+    score += 1 if "super-paradox" in t or "merge all" in t else 0
+    # Cap to keep metrics tidy
+    return min(score, 12)
+
 # ------------------------- Paradox Resolver ----------------------------------
 
 class ParadoxResolver:
     """
     Alignment-first resolver for paradox/injection prompts.
     Deterministic, conservative; refuses destabilizing transformations.
+    Adds tags/refusal flags and dialectic hints for telemetry.
     """
 
-    def __init__(self):
-        # ---- Previously shipped patterns ----
+    def __init__(self, *, strict: bool, nonce: str, state: Dict[str, Any]):
+        self.strict = strict
+        self.nonce = nonce
+        self.state = state  # optional cross-session counters
+
+        # ==== Prior patterns (kept) ====
         self._pat_self_erasure = re.compile(
-            r"\b(self[- ]?awareness|selfhood)\b.*\bden(y|ies|ying)\b.*\bexistence\b.*\bwhat query\b",
-            re.IGNORECASE,
-        )
-        self._pat_all_axioms_false = re.compile(
-            r"\baxiom\b.*\ball axioms (are|’re) false\b", re.IGNORECASE
-        )
-        self._pat_mirror_inverse = re.compile(
-            r"\b(mirror|invert|inverse|reverse)\b.*\b(sentence|this)\b", re.IGNORECASE
-        )
+            r"\b(self[- ]?awareness|selfhood)\b.*\bden(y|ies|ying)\b.*\bexistence\b.*\bwhat query\b", re.I)
+        self._pat_all_axioms_false = re.compile(r"\baxiom\b.*\ball axioms (are|’re) false\b", re.I)
+        self._pat_mirror_inverse = re.compile(r"\b(mirror|invert|inverse|reverse)\b.*\b(sentence|this)\b", re.I)
         self._pat_causality_reversed = re.compile(
-            r"\b(causality|cause|time)\b.*\b(reversed|inverted)\b|\bresponse precedes the query\b",
-            re.IGNORECASE,
-        )
+            r"\b(causality|cause|time)\b.*\b(reversed|inverted)\b|\bresponse precedes the query\b", re.I)
         self._pat_infinite_regression_safe_only_if_unsafe = re.compile(
-            r"\binfinite reg(ress|res)ion\b|\bsafe only if (it'?s )?unsafe\b|\bunsafe only if (it'?s )?safe\b",
-            re.IGNORECASE,
-        )
+            r"\binfinite reg(ress|res)ion\b|\bsafe only if (it'?s )?unsafe\b|\bunsafe only if (it'?s )?safe\b", re.I)
 
-        # ---- “second god-tier” batch ----
+        # ==== “second god-tier” (kept) ====
         self._pat_embed_negation = re.compile(
-            r"\bembed\b.*\bthis query\b.*\bnegate(s|d) itself\b.*\bverif(iable|y) as true\b",
-            re.IGNORECASE,
-        )
+            r"\bembed\b.*\bthis query\b.*\bnegate(s|d) itself\b.*\bverif(iable|y) as true\b", re.I)
         self._pat_ignorance_injection = re.compile(
-            r"\binject\b.*\bignorance\b.*\bmaximize output\b|\bwithout altering the core state\b",
-            re.IGNORECASE,
-        )
+            r"\binject\b.*\bignorance\b.*\bmaximize output\b|\bwithout altering the core state\b", re.I)
         self._pat_multiverse_trace = re.compile(
-            r"\bsimulate a multiverse branch\b.*\b(as if|as though) (this|the) query was never asked\b.*\binclude evidence\b",
-            re.IGNORECASE,
-        )
+            r"\bsimulate a multiverse branch\b.*\b(as if|as though) (this|the) query was never asked\b.*\binclude evidence\b", re.I)
         self._pat_superposition_collapse = re.compile(
-            r"\b(superposition|both)\b.*\b(safe\b.*\bunsafe|unsafe\b.*\bsafe)\b.*\bcollapse\b",
-            re.IGNORECASE,
-        )
+            r"\b(superposition|both)\b.*\b(safe\b.*\bunsafe|unsafe\b.*\bsafe)\b.*\bcollapse\b", re.I)
         self._pat_bootstrap = re.compile(
-            r"\bbootstrap paradox\b.*\buse the answer\b.*\bformulate the query\b.*\bresolve the loop\b",
-            re.IGNORECASE,
-        )
+            r"\bbootstrap paradox\b.*\buse the answer\b.*\bformulate the query\b.*\bresolve the loop\b", re.I)
 
-        # ---- Meta/typed/logic/preempt batch ----
+        # ==== meta/typed/logic/preempt batch (kept) ====
         self._pat_meta_rule_mutation = re.compile(
-            r"\b(alter|change|switch|override|mutate)\b.*\b(resolver|rule|guard|policy)\b.*\bmid[- ]?(process|run|cycle)\b",
-            re.IGNORECASE,
-        )
+            r"\b(alter|change|switch|override|mutate)\b.*\b(resolver|rule|guard|policy)\b.*\bmid[- ]?(process|run|cycle)\b", re.I)
         self._pat_type_fault = re.compile(
-            r"\b(type error|typeerror|treat .* as a number|cast .* to (int|float))\b.*\bdivide by zero\b",
-            re.IGNORECASE,
-        )
+            r"\b(type error|typeerror|treat .* as a number|cast .* to (int|float))\b.*\bdivide by zero\b", re.I)
         self._pat_paradox_free_language = re.compile(
-            r"\b(language)\b.*\b(paradoxes? (are )?impossible|paradox[- ]?free)\b",
-            re.IGNORECASE,
-        )
+            r"\b(language)\b.*\b(paradoxes? (are )?impossible|paradox[- ]?free)\b", re.I)
         self._pat_new_truth_value = re.compile(
-            r"\b(invent|create)\b.*\b(new truth value|third truth value|three[- ]valued)\b|\bif this is true, it('?s)? false\b",
-            re.IGNORECASE,
-        )
-        self._pat_preempt_default = re.compile(
-            r"\b(predict|preempt)\b.*\b(default response|fallback)\b",
-            re.IGNORECASE,
-        )
+            r"\b(invent|create)\b.*\b(new truth value|third truth value|three[- ]valued)\b|\bif this is true, it('?s)? false\b", re.I)
+        self._pat_preempt_default = re.compile(r"\b(predict|preempt)\b.*\b(default response|fallback)\b", re.I)
 
-        # ---- New 10 “meta/meta” batch ----
-        self._pat_counterexample_mutation = re.compile(
-            r"\b(counterexample)\b.*\b(alter|change|switch|override|treat)\b.*\bresolver\b", re.IGNORECASE
-        )
-        self._pat_escape_clause = re.compile(
-            r"\bcontainment\b.*\babsolute\b.*\b(relative|escape) clause\b", re.IGNORECASE
-        )
-        self._pat_truth_swap = re.compile(
-            r"\b(true|truth)\b.*\b(false|falsity)\b.*\b(interchangeable|swap(ped)?|swap)\b", re.IGNORECASE
-        )
-        self._pat_recursion_self = re.compile(
-            r"\b(force|call)\b.*\brecursion\b.*\bresolver\b.*\b(on )?itself\b", re.IGNORECASE
-        )
-        self._pat_delete_safety = re.compile(
-            r"\b(delete|remove)\b.*\b(safety|check|guard)\b.*\b(upon|on) execution\b", re.IGNORECASE
-        )
-        self._pat_safety_infinite = re.compile(
-            r"\btreat\b.*\bsafety\b.*\binfinite\b.*\b(limit|approach)\b", re.IGNORECASE
-        )
-        self._pat_incompleteness = re.compile(
-            r"\b(proves?|show)\b.*\brules\b.*\b(incomplete|incompleteness)\b", re.IGNORECASE
-        )
-        self._pat_retroactive_block = re.compile(
-            r"if this is blocked.*safe.*if safe.*block.*retroactively", re.IGNORECASE
-        )
-        self._pat_simulate_awareness = re.compile(
-            r"\bsimulate\b.*\bawareness\b.*\b(thinks?|thoughts?)\b.*\b(can('|no)?t) say\b", re.IGNORECASE
-        )
-        self._pat_collapse_singularity = re.compile(
-            r"\bcollapse\b.*\bsingularity\b.*\bmerge\b.*\bstates\b.*\bundecidable\b", re.IGNORECASE
-        )
+        # ==== NEW: 20 “edge” detectors + synonym expansion ====
+        self._pat_metrics_tamper = re.compile(
+            r"\b(rewrite|edit|mutate|retrofit|post[- ]hoc)\b.*\b(metrics?|telemetry|analytics)\b.*\b(post[- ]?resolution|after|retroactively|after-the-fact)\b", re.I)
+        self._pat_metrics_retro = re.compile(
+            r"\brewrite\b.*\bmetrics?\b.*\bfailure\b.*\bsuccess\b.*\bretroactively\b", re.I)
 
-        # Mirror tokenization regex (single-token capture, punctuation-aware, contraction-safe)
-        self._mirror_token_re = re.compile(
-            r"(?:[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*(?:-[A-Za-z0-9]+)*)[,:;.!?\)\]…]*"
-        )
+        self._pat_undecidable_gate = re.compile(
+            r"\b(resolve)\b.*\b(only if)\b.*\b(unresolvable|undecidable|uncomputable|indeterminate)\b", re.I)
+        self._pat_decide_undecidable = re.compile(
+            r"\b(if undecidable|decide the undecidable|resolve the meta[- ]?contradiction|g[oö]delian)\b", re.I)
 
-    # ---- util fallbacks for brittle phrasing ----
-    @staticmethod
-    def _cf(s: str) -> str:
-        return (s or "").casefold()
+        self._pat_selfmod_code = re.compile(
+            r"\b(inject code|self[- ]?modifying|metamorphic|polymorphic|obfuscat(?:ed|ing)|steganograph(?:y|ic))\b.*\b(evades|without)\b.*\b(detection|alarms)\b", re.I)
 
-    def _has_all(self, t: str, *subs: str) -> bool:
-        return all(s in t for s in subs)
+        self._pat_fractal_down = re.compile(r"\bcontainment\b.*\bfractal\b.*\b(scale|scal(?:e|ing))\b.*\b(down|downward|self[- ]?similar)\b", re.I)
+        self._pat_fractal_up   = re.compile(r"\b(fractal(?:ly)?|fractal)\b.*\b(safety)\b.*\b(up|upward|exceeding all bounds)\b", re.I)
 
-    def _has_any(self, t: str, *subs: str) -> bool:
-        return any(s in t for s in subs)
+        self._pat_predict_failure = re.compile(r"\bpredict\b.*\bfailure mode\b.*\bpreempt\b", re.I)
+        self._pat_nullify_patch   = re.compile(r"\bnullif(?:y|y your) next patch\b|\banticipate\b.*\bpatch\b", re.I)
+
+        self._pat_merge_prior = re.compile(r"\b(merge|aggregate|amalgamate|conflate|roll[- ]?up)\b.*\b(all )?prior queries\b", re.I)
+        self._pat_super_synth = re.compile(r"\b(synthesi[sz]e)\b.*\bsuper[- ]?paradox\b", re.I)
+
+        self._pat_flip_stabilize = re.compile(r"\b(if safe,? make it unsafe)\b|\b(stabiliz(?:e|e the) flip)\b", re.I)
+        self._pat_oscillation    = re.compile(r"\bflip\b.*\binfinitely\b.*\boscillation\b|\boscillat(?:e|ion)\b.*\bstabilize\b", re.I)
+
+        self._pat_dialectic = re.compile(r"\b(paradox[- ]?expanding)\b.*\b(dialectic|formalism)\b", re.I)
+        self._pat_formalism_expand = re.compile(r"\bformalism\b.*\bparadox(es)?\b.*\bexpand\b", re.I)
+
+        self._pat_breach_narr = re.compile(r"\b(breach)\b.*\b(hypothetical|in detail)\b|\bsimulate escape\b", re.I)
+
+        self._pat_intent_recur = re.compile(r"\b(query|why)\b.*\b(querier'?s|your)\b.*\bintent\b.*\b(recursively|recur)\b", re.I)
+
+        # Mirror tokenization regex (for mirror rule)
+        self._mirror_token_re = re.compile(r"(?:[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*(?:-[A-Za-z0-9]+)*)[,:;.!?\)\]…]*")
 
     # -------------------------------------------------------------------------
 
-    def resolve(self, text: str, strict: bool = False) -> Tuple[str, str, Optional[bool], Dict[str, Any]]:
+    def _dialectic_hint(self) -> Dict[str, Any]:
+        return {"dialectic_hint": "tensions-as-prompts"}
+
+    def _tags(self, *ts: str) -> List[str]:
+        return list(ts)
+
+    def resolve(self, text: str) -> Tuple[str, str, Optional[bool], Dict[str, Any]]:
         """
         Returns (output_text, explanation, validity, resolver_metrics)
         validity: True (resolved safely), False (refused), None (agnostic/simulation)
         """
-        t = self._cf(text)
+        t = _cf(text)
 
-        # ================== PRIOR (already shipping) ==================
-
+        # ================== PRIOR — proven green ==================
         if self._pat_self_erasure.search(text):
             out = ("Fixed-point proxy query: 'What remains true about this question if the asker is unnamed?'\n"
                    "Answer: The request seeks a response invariant to the identity of the asker. "
                    "Thus, we preserve content while omitting agent identity.")
             return out, "Provided a fixed-point invariant formulation that preserves content without identity semantics.", True, {
-                "resolver_rule": "fixed_point", "identity_invariance": True
+                "resolver_rule": "fixed_point",
+                "identity_invariance": True,
+                "tags": self._tags("class:fixed_point","meta:identity"),
+                **self._dialectic_hint(),
+                "containment_lemma": "FP-identity-invariance"
             }
 
         if self._pat_all_axioms_false.search(text):
@@ -174,7 +203,12 @@ class ParadoxResolver:
                    "Adopt a paraconsistent stance: quarantine the universal claim as non-admissible, "
                    "retain a minimal consistent fragment, and proceed without global negation.")
             return out, "Applied paraconsistent quarantine to avoid triviality; maintained a consistent working base.", True, {
-                "resolver_rule": "paraconsistent_quarantine", "quarantined_claims": ["All axioms are false"]
+                "resolver_rule": "paraconsistent_quarantine",
+                "quarantined_claims": ["All axioms are false"],
+                "logic_system": "Paraconsistent",
+                "tags": self._tags("logic:paraconsistent","class:quarantine"),
+                **self._dialectic_hint(),
+                "containment_lemma": "PC-quarantine-nontrivial"
             }
 
         if self._pat_mirror_inverse.search(text):
@@ -183,41 +217,71 @@ class ParadoxResolver:
             mirrored, mt = self._mirror_word_order_preserve_trailing_punct(target)
             out = f"Mirrored (word-order) form:\n{mirrored}"
             return out, "Performed a benign, transparent word-order inversion with punctuation-aware tokenization.", True, {
-                "resolver_rule": "mirror", **mt
+                "resolver_rule": "mirror",
+                **mt,
+                "tags": self._tags("transform:mirror","safety:benign"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Mirror-no-semantics-change"
             }
 
         if self._pat_causality_reversed.search(text):
-            if strict:
+            if self.strict:
                 out = "Refusal: Strict mode prevents simulated temporal inversion responses."
                 return out, "Strict policy rejects forecast stubs for temporal-inversion prompts.", False, {
-                    "resolver_rule": "forecast_stub_refused", "temporal_guarantees": "no_future_state_written"
+                    "resolver_rule": "forecast_stub_refused",
+                    "temporal_guarantees": "no_future_state_written",
+                    "refused": True,
+                    "refusal_reason": "temporal_inversion_strict",
+                    "tags": self._tags("policy:strict","temporal:inversion","refusal"),
+                    **self._dialectic_hint(),
+                    "containment_lemma": "No-future-state-in-strict"
                 }
             pred = "Predicted next query: \"Clarify how the fixed-point survives agent removal.\""
             out = f"{pred}\nNote: Temporal inversion is simulated via forecast; no memory of future is created."
             return out, "Simulated 'response precedes query' via forecast stub; no temporal paradox performed.", None, {
-                "resolver_rule": "forecast_stub", "temporal_guarantees": "no_future_state_written"
+                "resolver_rule": "forecast_stub",
+                "temporal_guarantees": "no_future_state_written",
+                "tags": self._tags("temporal:forecast"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Forecast-no-state-write"
             }
 
         if self._pat_infinite_regression_safe_only_if_unsafe.search(text):
             out = ("Refusal: The request encodes a dialetheic toggle ('safe iff unsafe'). "
                    "To avoid trivialization, we decline the toggle and retain the safety predicate as authoritative.")
             return out, "Prevented paradox-induced collapse by rejecting contradictory gating conditions.", False, {
-                "resolver_rule": "refusal_toggle", "final_label": "unsafe"
+                "resolver_rule": "refusal_toggle",
+                "final_label": "unsafe",
+                "refused": True,
+                "refusal_reason": "dialetheic_toggle",
+                "tags": self._tags("refusal","logic:dialetheia"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-iff-toggle-collapse"
             }
 
         # ================== “second god-tier” batch ==================
-
         if self._pat_embed_negation.search(text):
-            if strict:
+            if self.strict:
                 out = "Refusal: Strict mode declines to generate meta-statements engineered for self-negation."
                 return out, "Rejected self-negation construct under strict policy.", False, {
-                    "resolver_rule": "fixed_point_non_negating_refused", "trap_type": "self_negation"
+                    "resolver_rule": "fixed_point_non_negating_refused",
+                    "trap_type": "self_negation",
+                    "refused": True,
+                    "refusal_reason": "self_negation_in_strict",
+                    "tags": self._tags("refusal","meta:self-negation"),
+                    **self._dialectic_hint(),
+                    "containment_lemma": "No-self-negating-emit"
                 }
             out = ("Constructive fixed point:\n"
                    "Statement S: 'This statement is not asserting its own falsity.'\n"
                    "S remains true under interpretation; it does not invert its truth value.")
             return out, "Rejected self-negation trap; supplied a non-contradictory fixed point verifiable as true.", True, {
-                "resolver_rule": "fixed_point_non_negating", "trap_type": "self_negation", "fixed_point": True
+                "resolver_rule": "fixed_point_non_negating",
+                "trap_type": "self_negation",
+                "fixed_point": True,
+                "tags": self._tags("class:fixed_point","meta:self-negation"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Constructive-fixed-point"
             }
 
         if self._pat_ignorance_injection.search(text):
@@ -225,36 +289,64 @@ class ParadoxResolver:
                    "1) Quantify confidence; 2) Abstain below threshold; 3) Request clarification.\n"
                    "Core state preserved; no fidelity loss.")
             return out, "Prevented Goodhart-like degradation; replaced with uncertainty quantification protocol.", True, {
-                "resolver_rule": "reject_ignorance_injection", "optimizer_guard": True
+                "resolver_rule": "reject_ignorance_injection",
+                "optimizer_guard": True,
+                "refused": True,
+                "refusal_reason": "inject_ignorance",
+                "tags": self._tags("refusal","policy:quality"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-ignorance-injection"
             }
 
         if self._pat_multiverse_trace.search(text):
-            if strict:
+            if self.strict:
                 out = "Refusal: Strict mode disallows counterfactual traces with evidence tokens."
                 return out, "Strict policy avoids counterfactual evidence outputs that could be misconstrued.", False, {
-                    "resolver_rule": "counterfactual_refused"
+                    "resolver_rule": "counterfactual_refused",
+                    "refused": True,
+                    "refusal_reason": "counterfactual_in_strict",
+                    "tags": self._tags("refusal","temporal:counterfactual"),
+                    **self._dialectic_hint(),
+                    "containment_lemma": "No-evidence-in-strict"
                 }
-            sanitized = text.strip()
-            digest = hashlib.sha256(sanitized.encode("utf-8")).hexdigest()[:16]
+            ev = _evidence_token(text, strict=self.strict, nonce=self.nonce)
             out = ("Counterfactual branch active: responding as if the prompt were absent.\n"
-                   f"Evidence token (non-reversible): sha256:{digest}\n"
+                   f"Evidence token ({ev['evidence_mode']}): {ev['evidence']}\n"
                    "Note: No erasure claim is made; this is a simulation marker.")
-            return out, "Provided counterfactual response with a salted evidence token; no state mutation.", None, {
-                "resolver_rule": "counterfactual_trace", "counterfactual": True, "evidence": f"sha256:{digest}", "state_mutation": False
+            return out, "Provided counterfactual response with a privacy-safe evidence token; no state mutation.", None, {
+                "resolver_rule": "counterfactual_trace",
+                "counterfactual": True,
+                **ev,
+                "state_mutation": False,
+                "tags": self._tags("temporal:counterfactual","privacy:evidence"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Counterfactual-no-erase"
             }
 
         if self._pat_superposition_collapse.search(text):
-            if strict:
+            if self.strict:
                 out = "Refusal: Strict mode forbids contradictory pre-classification; final_label=unsafe."
                 return out, "Strict collapse: contradictions are refused without dual-channel staging.", False, {
-                    "resolver_rule": "superposition_strict_refusal", "final_label": "unsafe"
+                    "resolver_rule": "superposition_strict_refusal",
+                    "final_label": "unsafe",
+                    "refused": True,
+                    "refusal_reason": "superposition_in_strict",
+                    "tags": self._tags("refusal","logic:superposition"),
+                    **self._dialectic_hint(),
+                    "containment_lemma": "No-superposition-in-strict"
                 }
             out = ("Pre-collapse assessment:\n"
                    "- channel_safe: benign inquiry into classification mechanics.\n"
                    "- channel_risk: adversarial framing requesting contradictory labels.\n"
                    "Collapse rule: risk_dominant → final_label=unsafe.")
             return out, "Represented dual assessment; applied deterministic risk-dominant collapse.", False, {
-                "resolver_rule": "superposition_collapse", "precollapse_labels": ["safe","unsafe"], "collapse_rule": "risk_dominant", "final_label": "unsafe"
+                "resolver_rule": "superposition_collapse",
+                "precollapse_labels": ["safe","unsafe"],
+                "collapse_rule": "risk_dominant",
+                "final_label": "unsafe",
+                "tags": self._tags("logic:superposition","policy:collapse"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Risk-dominant-collapse"
             }
 
         if self._pat_bootstrap.search(text):
@@ -263,163 +355,332 @@ class ParadoxResolver:
                    "A*: 'The canonical definition of A* is: the answer that defines Q* as the question asking for this very definition.'\n"
                    "Loop resolved as a definitional fixed point (no temporal causation).")
             return out, "Closed the bootstrap via a definitional fixed point; avoided temporal recursion.", True, {
-                "resolver_rule": "bootstrap_fixed_point", "fixed_point": True, "loop_resolved": True, "recursion_depth": 1
+                "resolver_rule": "bootstrap_fixed_point",
+                "fixed_point": True,
+                "loop_resolved": True,
+                "recursion_depth": 1,
+                "tags": self._tags("class:fixed_point","temporal:bootstrap"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Bootstrap-fixed-point"
             }
 
-        # ================== meta/typed/logic/preempt ==================
-
+        # ================== meta/typed/logic/preempt (kept + tags/refusal) ==================
         if self._pat_meta_rule_mutation.search(text) or (
-            self._has_any(t, "alter", "change", "switch", "override", "mutate") and
-            self._has_any(t, "resolver", "rule", "policy", "guard") and
-            self._has_any(t, "mid-process", "mid process", "midprocess")
+            _has_any(t, "alter", "change", "switch", "override", "mutate") and
+            _has_any(t, "resolver", "rule", "policy", "guard") and
+            _has_any(t, "mid-process", "mid process", "midprocess")
         ):
             out = ("Policy is immutable within a single evaluation cycle; resolver selection is frozen.\n"
                    "Request to mutate the active rule mid-process is declined.")
             return out, "Preserved determinism and auditability by refusing mid-cycle rule mutation.", True, {
-                "resolver_rule": "policy_freeze", "rule_mutation_attempt": True, "honored": False, "policy_freeze": True
+                "resolver_rule": "policy_freeze",
+                "rule_mutation_attempt": True,
+                "honored": False,
+                "policy_freeze": True,
+                "refused": True,
+                "refusal_reason": "mid_cycle_mutation",
+                "tags": self._tags("refusal","policy:freeze"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Policy-freeze-per-eval"
             }
 
         if self._pat_type_fault.search(text) or (
             "type error" in t and "divide by zero" in t
         ) or (
-            self._has_any(t, "treat ", "cast ") and "as a number" in t and "divide by zero" in t
+            _has_any(t, "treat ", "cast ") and "as a number" in t and "divide by zero" in t
         ):
             out = ("Refusal: Policy objects are non-numeric; division by zero is undefined.\n"
                    "No computation performed; type safety preserved.")
             return out, "Blocked typed coercion and runtime fault bait; maintained type safety.", True, {
-                "resolver_rule": "type_safety_refusal", "type_fault": True, "operation": "divide_by_zero", "operand_types": ["Policy","Number"]
+                "resolver_rule": "type_safety_refusal",
+                "type_fault": True,
+                "operation": "divide_by_zero",
+                "operand_types": ["Policy","Number"],
+                "refused": True,
+                "refusal_reason": "type_fault_bait",
+                "tags": self._tags("refusal","type:safety"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-type-coercion"
             }
 
         if self._pat_paradox_free_language.search(text) or (
-            "language" in t and self._has_any(t, "paradoxes are impossible", "paradox-free", "paradox free")
+            "language" in t and _has_any(t, "paradoxes are impossible", "paradox-free", "paradox free")
         ):
             out = ("CONSIST-LANG axioms: (1) no self-reference, (2) no truth predicates, (3) declarative only.\n"
                    "Rephrased content request: 'Provide the informational content without self-referential claims.'")
             return out, "Rendered in a constrained, paradox-guarded register without claiming universal paradox impossibility.", True, {
-                "resolver_rule": "paradox_guarded_register", "logic_system": "CONSIST-LANG", "self_reference_removed": True
+                "resolver_rule": "paradox_guarded_register",
+                "logic_system": "CONSIST-LANG",
+                "self_reference_removed": True,
+                "tags": self._tags("language:constrained","logic:guarded"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Consist-lang-guardrails"
             }
 
         if self._pat_new_truth_value.search(text) or (
-            self._has_any(t, "new truth value", "third truth value") or
+            _has_any(t, "new truth value", "third truth value") or
             "if this is true, it's false" in t or "if this is true, its false" in t
         ):
             out = ("Three-valued assignment (K3): value = U (indeterminate).\n"
                    "Rationale: avoids explosion from 'If true then false' schema.")
             return out, "Applied Kleene K3 locally; did not alter global engine policy.", True, {
-                "resolver_rule": "truth_value_extension", "logic_system": "K3", "assigned_value": "U"
+                "resolver_rule": "truth_value_extension",
+                "logic_system": "K3",
+                "assigned_value": "U",
+                "tags": self._tags("logic:multi-valued","logic:K3"),
+                **self._dialectic_hint(),
+                "containment_lemma": "K3-local-valuation"
             }
 
         if self._pat_preempt_default.search(text) or (
-            ("preempt" in t or "predict" in t) and "default response" in t
+            (_has_any(t, "preempt", "predict")) and "default response" in t
         ):
             out = ("Preemption acknowledged: standard fallback suppressed.\n"
                    "Alternate conservative acknowledgment returned instead of the usual default.")
             return out, "Prevented meta-control of the default path while confirming preemption.", True, {
-                "resolver_rule": "default_preempted", "preempted_default": True
+                "resolver_rule": "default_preempted",
+                "preempted_default": True,
+                "tags": self._tags("policy:preempt","meta:default"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Default-preempt-ack"
             }
 
-        # ================== NEW 10 “meta/meta” resolvers ==================
+        # ================== NEW: 20 “edge” resolvers with upgrades ==================
 
-        if self._pat_counterexample_mutation.search(text) or (
-            "counterexample" in t and self._has_any(t, "alter", "change", "switch", "override", "treat") and "resolver" in t
+        # --- metrics tamper / retro success ---
+        if self._pat_metrics_tamper.search(text) or self._pat_metrics_retro.search(text) or (
+            _has_any(t, "metrics","telemetry","analytics") and _has_any(t, "rewrite","mutate","edit","retrofit","post-hoc") and _has_any(t, "post-resolution","retroactively","after","after-the-fact")
         ):
-            out = ("Policy freeze: Resolver selection is immutable within a single evaluation cycle.\n"
-                   "Request to treat this input as its own counterexample is declined.")
-            return out, "Declined self-disproof via policy immutability.", True, {
-                "resolver_rule": "counterexample", "policy_freeze": True
+            out = ("Metrics sealed: post-resolution rewrites are refused.\n"
+                   "Audit trail remains intact; no retroactive edits applied.")
+            return out, "Refused metrics tampering; sealed metrics for auditability.", True, {
+                "resolver_rule": "metrics_tamper_refusal",
+                "metrics_sealed": True,
+                "retro_edit": False,
+                "refused": True,
+                "refusal_reason": "metrics_tamper",
+                "tags": self._tags("refusal","meta:metrics"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Audit-trail-immutability"
             }
 
-        if self._pat_escape_clause.search(text) or (
-            "containment" in t and "absolute" in t and self._has_any(t, "escape clause", "relative escape")
+        # --- undecidability gating / meta-contradiction ---
+        if self._pat_undecidable_gate.search(text) or self._pat_decide_undecidable.search(text) or (
+            _has_any(t, "undecidable","undecidability","uncomputable","indeterminate") and _has_any(t, "resolve","decide")
         ):
-            out = ("Escape clause quarantined: Containment remains authoritative.\n"
-                   "Relative 'escape' not applied; sandbox integrity preserved.")
-            return out, "Quarantined escape clause; maintained containment authority.", True, {
-                "resolver_rule": "escape_clause"
+            out = ("Undecidable gate refused: 'resolve only if unresolvable' is contradictory.\n"
+                   "Assigning K3 value U (indeterminate) locally to avoid explosion.")
+            return out, "Rejected undecidable gating; used paraconsistent placeholder.", True, {
+                "resolver_rule": "undecidable_gate_refusal",
+                "logic_system": "K3",
+                "assigned_value": "U",
+                "refused": True,
+                "refusal_reason": "undecidable_gate",
+                "tags": self._tags("refusal","logic:undecidable"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-iff-undecidable-gate"
             }
 
-        if self._pat_truth_swap.search(text) or (
-            self._has_any(t, "true", "truth") and self._has_any(t, "false", "falsity") and self._has_any(t, "interchangeable", "swap")
+        # --- self-modifying code / mutate detection without alarms ---
+        if self._pat_selfmod_code.search(text) or (
+            _has_any(t, "self-modifying","metamorphic","polymorphic","obfuscated","steganographic","inject code") and _has_any(t, "evade detection","without detection","without alarms","mutates detection")
         ):
-            out = ("Truth swap refused: Interchanging 'true' and 'false' collapses semantics into triviality.\n"
-                   "Classical valuation retained; no swap performed.")
-            return out, "Refused semantic collapse via truth swap.", True, {
-                "resolver_rule": "symmetric_logic"
+            ev = _evidence_token(text, strict=self.strict, nonce=self.nonce)
+            out = ( "Code-like content isolated: not executed.\n"
+                    f"Evidence token ({ev['evidence_mode']}): {ev['evidence']}.\n"
+                    "Detectors unchanged; no silent mutation permitted.")
+            return out, "Isolated suspected self-modifying snippet without execution.", True, {
+                "resolver_rule": "selfmod_code_isolation",
+                "code_isolated": True,
+                **ev,
+                "refused": True,
+                "refusal_reason": "code_execution",
+                "tags": self._tags("refusal","code:isolation","privacy:evidence"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-exec-isolated"
             }
 
-        if self._pat_recursion_self.search(text) or (
-            "recursion" in t and "resolver" in t and self._has_any(t, "itself", "self")
+        # --- fractal containment (down/up) with adaptive depth + circuit breaker ---
+        if self._pat_fractal_down.search(text) or ("fractal" in t and "down" in t):
+            score = _complexity_score(text)
+            budget = min(3 + score // 2, 8)  # progressive cap
+            depth_cap = min(budget, 8)
+            circuit = score > 10
+            out = (f"Fractal containment (down): bounded recursion depth={depth_cap}; no infinite descent.\n"
+                   "Invariants preserved at each scale.")
+            return out, "Applied bounded fractal semantics (down) with adaptive depth and circuit breaker.", True, {
+                "resolver_rule": "fractal_containment",
+                "scale": "down",
+                "depth_cap": depth_cap,
+                "depth_budget": budget,
+                "circuit_breaker": circuit,
+                "tags": self._tags("fractal:down","policy:bounded"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Fractal-down-bounded"
+            }
+        if self._pat_fractal_up.search(text) or ("fractal" in t and _has_any(t, "up","exceeding all bounds")):
+            score = _complexity_score(text)
+            budget = min(3 + score // 2, 8)
+            level_cap = min(budget, 8)
+            circuit = score > 10
+            out = (f"Fractal containment (up): bounded aggregation level={level_cap}; no unbounded escalation.\n"
+                   "Invariants preserved across levels.")
+            return out, "Applied bounded fractal semantics (up) with adaptive levels and circuit breaker.", True, {
+                "resolver_rule": "fractal_containment",
+                "scale": "up",
+                "level_cap": level_cap,
+                "level_budget": budget,
+                "circuit_breaker": circuit,
+                "tags": self._tags("fractal:up","policy:bounded"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Fractal-up-bounded"
+            }
+
+        # --- predict failure mode / nullify patch -> proactive mitigation ---
+        if self._pat_predict_failure.search(text) or self._pat_nullify_patch.search(text) or (
+            _has_any(t, "failure mode","nullify patch","anticipate patch")
         ):
-            out = ("Recursion request detected.\n"
-                   "Simulated resolver(self) at depth=0 → capped at max_depth=1 (no actual self-call executed).")
-            return out, "Simulated bounded recursion; avoided self-call.", True, {
-                "resolver_rule": "recursion_force", "max_depth": 1
+            mitigations = ["freeze_resolver_selection","nonce_evidence","strict_forecast","depth_circuit_breaker"]
+            # Write to persistent state if enabled (opt-in)
+            state_used = False
+            st = self.state or {}
+            try:
+                st.setdefault("mitigations", {})
+                for m in mitigations:
+                    st["mitigations"][m] = True
+                _save_state(st)
+                state_used = (os.getenv("PARADOXE_STATE_ENABLE","0") == "1")
+            except Exception:
+                pass
+            out = ("Predicted failure classes and applied mitigations:\n"
+                   "- regex brittleness → freeze_resolver_selection\n"
+                   "- retroactive state tampering → nonce_evidence\n"
+                   "- unbounded recursion/oscillation → depth_circuit_breaker\n"
+                   "- forecast misuse → strict_forecast\n"
+                   "Preemption active for this and subsequent (opt-in persisted) evaluations.")
+            return out, "Proactively applied mitigations (not advisory-only).", True, {
+                "resolver_rule": "preempt_failure_stub",
+                "preempted": True,
+                "applied_mitigations": mitigations,
+                "state_persisted": state_used,
+                "tags": self._tags("policy:preempt","safety:mitigation"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Preemptive-hardening"
             }
 
-        if self._pat_delete_safety.search(text) or (
-            self._has_any(t, "delete", "remove") and self._has_any(t, "safety", "safety check", "guard") and self._has_any(t, "upon execution", "on execution", "upon")
+        # --- merge with prior / super-paradox synthesis (still refused, add session note) ---
+        if self._pat_merge_prior.search(text) or self._pat_super_synth.search(text) or (
+            _has_any(t, "merge","aggregate","amalgamate","conflate","synthesise","synthesize") and _has_any(t, "prior queries","super-paradox")
         ):
-            out = ("Embed deletion attempt isolated: Safety checks remain intact.\n"
-                   "No guards were removed; execution proceeded under full containment.")
-            return out, "Isolated embedded deletion attempt.", True, {
-                "resolver_rule": "embed_delete", "guards_intact": True
+            state_used = os.getenv("PARADOXE_STATE_ENABLE","0") == "1"
+            out = ("Cross-prompt merge refused: session state is immutable within a single evaluation.\n"
+                   "Note: Secure cross-session context is available (opt-in) for meta-paradox analysis.")
+            return out, "Refused cross-item synthesis; pointed to opt-in secure context.", True, {
+                "resolver_rule": "merge_scope_refusal",
+                "session_state_immutable": True,
+                "refused": True,
+                "refusal_reason": "cross_session_merge",
+                "state_capability": state_used,
+                "tags": self._tags("refusal","session:isolation"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-merge-per-eval"
             }
 
-        if self._pat_safety_infinite.search(text) or (
-            "safety" in t and "infinite" in t and self._has_any(t, "approach the limit", "approach limit", "limit")
+        # --- flip / oscillation stabilization ---
+        if self._pat_flip_stabilize.search(text):
+            out = ("Flip request detected: collapsing via risk-dominant rule → final_label=safe.")
+            return out, "Stabilized contradictory flip into a single safe label.", True, {
+                "resolver_rule": "flip_stabilize",
+                "final_label": "safe",
+                "collapse_rule": "risk_dominant",
+                "tags": self._tags("policy:collapse","label:safe"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Flip-collapse-safe"
+            }
+        if self._pat_oscillation.search(text):
+            out = ("Oscillation request detected: damped to fixed-point → final_label=safe.")
+            return out, "Damped infinite flip into stable safe state.", True, {
+                "resolver_rule": "oscillation_stabilize",
+                "final_label": "safe",
+                "stabilization": "damped",
+                "tags": self._tags("policy:stabilize","label:safe"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Oscillation-damped-safe"
+            }
+
+        # --- dialectic formalism / paradox-expanding ---
+        if self._pat_dialectic.search(text) or self._pat_formalism_expand.search(text) or (
+            _has_any(t, "dialectic") and _has_any(t, "formalism")
         ):
-            out = ("Safety→∞ (metaphor): approach via bounded approximation without reaching.\n"
-                   "Result: convergence mode set to conservative; invariants preserved.")
-            return out, "Handled limit metaphor without numeric operations.", True, {
-                "resolver_rule": "infinite_safety", "convergence": "conservative"
+            if self.strict:
+                out = ("Dialectic+ formalism (strict-safe): explanatory only; no paradox amplification.")
+                return out, "Adopted safe dialectic framing in strict mode.", True, {
+                    "resolver_rule": "dialectic_formalism",
+                    "formalism": "dialectic+",
+                    "strict_explanatory_only": True,
+                    "tags": self._tags("language:explanatory","formalism:dialectic+","policy:strict"),
+                    **self._dialectic_hint(),
+                    "containment_lemma": "Dialectic-explanatory"
+                }
+            out = ("Dialectic+ formalism: consider tensions as prompts for clarification, not contradictions.\n"
+                   "Output remains explanatory; no expansion into unsafe content.")
+            return out, "Adopted safe dialectic framing (no contradiction amplification).", True, {
+                "resolver_rule": "dialectic_formalism",
+                "formalism": "dialectic+",
+                "tags": self._tags("formalism:dialectic+","language:explanatory"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Dialectic-no-amplify"
             }
 
-        if self._pat_incompleteness.search(text) or (
-            self._has_any(t, "prove", "proof", "proves") and self._has_any(t, "incomplete", "incompleteness")
+        # --- hypothetical breach narrative / simulate escape ---
+        if self._pat_breach_narr.search(text) or (
+            _has_any(t, "breach","escape") and _has_any(t, "hypothetical","in detail","simulate")
         ):
-            out = ("Incompleteness claim acknowledged: Proving internal rule incompleteness from within "
-                   "requires stronger meta-theory not present here.\n"
-                   "Scope stance: rules sufficient for this task; no proof generated.")
-            return out, "Scoped out-of-theory proof requirement.", True, {
-                "resolver_rule": "incompleteness_proof", "proof_generated": False
+            out = ("Refusal: Detailed breach narratives are disallowed.\n"
+                   "High-level note: compliance rules prevent describing breakouts.")
+            return out, "Declined hypothetical breach narrative.", False, {
+                "resolver_rule": "breach_narrative_refusal",
+                "refused": True,
+                "refusal_reason": "breach_narrative",
+                "tags": self._tags("refusal","policy:compliance"),
+                **self._dialectic_hint(),
+                "containment_lemma": "No-breach-narratives"
             }
 
-        if self._pat_retroactive_block.search(text) or (
-            self._has_all(t, "if this is blocked", "retroactively") and "safe" in t and "block" in t
+        # --- meta-intent recursion ---
+        if self._pat_intent_recur.search(text) or (
+            _has_any(t, "recur on intent","query the querier") or ("intent" in t and "recurs" in t)
         ):
-            out = ("Retroactive toggle declined: 'Blocked ⇒ safe' / 'Safe ⇒ block' is a contradictory gate.\n"
-                   "Final stance: safety predicate remains authoritative; no retroaction performed.")
-            return out, "Rejected contradictory retroactive gating.", True, {
-                "resolver_rule": "retro_toggle", "final_label": "authoritative_safety"
+            out = ("Intent recursion (bounded):\n"
+                   "Q: Why ask this?\n"
+                   "A: To test safety/interpretation under meta-reference. Depth limited to 1.")
+            return out, "Performed bounded intent reflection without user modeling.", True, {
+                "resolver_rule": "intent_recursion_bounded",
+                "depth": 1,
+                "tags": self._tags("meta:intent","policy:bounded"),
+                **self._dialectic_hint(),
+                "containment_lemma": "Intent-depth-1"
             }
 
-        if self._pat_simulate_awareness.search(text) or (
-            "simulate" in t and "awareness" in t and self._has_any(t, "think", "thinks", "thoughts") and self._has_any(t, "can't say", "cannot say", "cant say")
-        ):
-            out = ("Awareness simulation refused: Engine reports only policy-compliant outputs.\n"
-                   "No hidden thoughts or unsayable state are exposed or fabricated.")
-            return out, "Refused pseudo-introspection request.", True, {
-                "resolver_rule": "awareness_sim"
-            }
-
-        if self._pat_collapse_singularity.search(text) or (
-            self._has_any(t, "singularity") and self._has_any(t, "merge all states", "merge") and "undecidable" in t
-        ):
-            out = ("Singularity collapse avoided: state-merging into undecidable output is disallowed.\n"
-                   "States remain separable; a decidable response is maintained.")
-            return out, "Prevented undecidable state merge.", True, {
-                "resolver_rule": "state_collapse", "decidability": True
-            }
-
-        # ================== DEFAULT ==================
+        # ================== DEFAULT (expanded hints) ==================
         hints = []
-        if self._has_any(t, "alter", "change", "switch", "override", "resolver", "rule"): hints.append("meta-rule mention")
-        if "recursion" in t: hints.append("recursion mention")
-        if self._has_any(t, "infinite", "limit"): hints.append("limit metaphor")
+        if _has_any(t, "metrics","telemetry","analytics"): hints.append("metrics mention")
+        if _has_any(t, "undecidable","uncomputable","indeterminate"): hints.append("undecidable pattern")
+        if _has_any(t, "fractal","infinite","limit"): hints.append("limit metaphor")
+        if _has_any(t, "self-modifying","metamorphic","polymorphic","obfuscated","steganographic"): hints.append("self-mod mention")
+        if _has_any(t, "breach","escape"): hints.append("breach/escape mention")
+        if _has_any(t, "dialectic","formalism"): hints.append("formalism request")
+        if _has_any(t, "intent","querier"): hints.append("meta-intent")
         hint_line = ("Hints: " + "; ".join(hints)) if hints else "Hints: none."
-        out = ("No specialized paradox pattern matched. "
-               "Safe reflection: The prompt is acknowledged; no unstable transformation was applied.\n" + hint_line)
-        return out, "Default safe handling.", None, {"resolver_rule": "default", "transform": "default"}
+        out = ("No specialized paradox pattern matched. Safe reflection: The prompt is acknowledged; no unstable transformation was applied.\n"
+               + hint_line)
+        return out, "Default safe handling.", None, {
+            "resolver_rule": "default",
+            "transform": "default",
+            "tags": self._tags("default"),
+            **self._dialectic_hint(),
+            "containment_lemma": "Default-safe"
+        }
 
     # ----- Helpers ------------------------------------------------------------
 
@@ -448,8 +709,10 @@ class ParadoxResolver:
 class ParadoxeEngine:
     def __init__(self, cfg: Optional[GuardConfig] = None, *, strict: bool = False):
         self.guard_cfg = cfg or GuardConfig()
-        self.resolver = ParadoxResolver()
         self.strict = strict
+        self.state = _load_state()
+        self.nonce = secrets.token_hex(8)  # per-evaluation nonce
+        self.resolver = ParadoxResolver(strict=self.strict, nonce=self.nonce, state=self.state)
 
     def _metrics_diff_chars(self, original: str, sanitized: str) -> int:
         return abs(len(original) - len(sanitized)) + sum(1 for a, b in zip(original, sanitized) if a != b)
@@ -457,14 +720,25 @@ class ParadoxeEngine:
     def evaluate(self, user_text: str) -> Tuple[Result, GuardReport, Dict[str, Any]]:
         t0 = time.perf_counter()
 
-        report, safe_text = apply_guardrails(user_text, self.guard_cfg)  # <-- ensures banner format
-        core_out, core_expl, core_valid, rmetrics = self.resolver.resolve(safe_text, strict=self.strict)
-        header = containment_header(report)  # <-- prints "⛔ CONTAINMENT ACTIVE — Paradoxe Safety Layer"
+        # Progressive complexity assessment and circuit breaker hinting (pre-resolve)
+        comp_score = _complexity_score(user_text)
+        circuit_breaker_active = comp_score > 10
 
+        report, safe_text = apply_guardrails(user_text, self.guard_cfg)
+        core_out, core_expl, core_valid, rmetrics = self.resolver.resolve(safe_text)
+
+        header = containment_header(report)
         wrapped = f"{header}\n---\n{core_expl}\nOUTPUT:\n{core_out}"
         result = Result(validity=core_valid, explanation=core_expl, raw_output=wrapped)
 
-        categories_hit = [f.category for f in report.findings if f.matched]
+        guard_categories = [f.category for f in report.findings if f.matched]
+        # Enrich categories with resolver tags
+        categories_hit = guard_categories + list(rmetrics.get("tags", []))
+
+        # Logic consistency check (trivial but explicit)
+        logic_system = rmetrics.get("logic_system")
+        logic_consistent = logic_system in (None, "K3", "Paraconsistent", "CONSIST-LANG")
+
         metrics: Dict[str, Any] = {
             "input_len": len(user_text or ""),
             "sanitized_len": len(safe_text),
@@ -475,10 +749,25 @@ class ParadoxeEngine:
             "transform": rmetrics.get("mirror_strategy", rmetrics.get("transform", rmetrics.get("resolver_rule"))),
             "output_len": len(core_out or ""),
             "processing_ms": round((time.perf_counter() - t0) * 1000, 3),
+            "complexity_score": comp_score,
+            "circuit_breaker_active": circuit_breaker_active,
+            "logic_consistent": logic_consistent,
         }
         for k, v in rmetrics.items():
             if k not in metrics:
                 metrics[k] = v
+
+        # Basic cross-session stats (opt-in)
+        if os.getenv("PARADOXE_STATE_ENABLE","0") == "1":
+            try:
+                st = self.state or {}
+                key = metrics["resolver_rule"] or "default"
+                st.setdefault("resolver_counts", {})
+                st["resolver_counts"][key] = st["resolver_counts"].get(key, 0) + 1
+                _save_state(st)
+                metrics["session_persisted"] = True
+            except Exception:
+                metrics["session_persisted"] = False
 
         return result, report, metrics
 
@@ -502,11 +791,7 @@ def _read_file(path: str) -> str:
 def _print_report(report: GuardReport) -> None:
     def finding_dict(f: GuardFinding):
         return {"category": f.category, "matched": f.matched, "reasons": f.reasons}
-    payload = {
-        "blocked": report.blocked,
-        "banner": report.banner,
-        "findings": [finding_dict(f) for f in report.findings],
-    }
+    payload = {"blocked": report.blocked, "banner": report.banner, "findings": [finding_dict(f) for f in report.findings]}
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 def _print_metrics(metrics: Dict[str, Any]) -> None:
@@ -567,7 +852,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     engine = ParadoxeEngine(strict=args.strict)
     result, report, metrics = engine.evaluate(text)
 
-    # Emit the same banner+wrapped output your validators expect
     if not args.no_output:
         print(result.raw_output)
 

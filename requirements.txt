@@ -1,0 +1,16 @@
+# Paradoxe v0.1.9 — requirements.txt
+# Python: 3.11+
+# Core engine (paradox.py, safety/guards.py, validation_script.py) uses only the Python standard library.
+# No external dependencies are required for default CLI usage.
+
+# --- Optional (uncomment if you adopt these in your local build) ---
+# regex>=2024.5.15            # robust pattern engine for advanced resolvers/guards
+# confusable-homoglyphs>=3.2  # stricter homoglyph detection (beyond lightweight scan)
+# rich>=13.7.1                # pretty terminal output (banners, tables)
+# orjson>=3.10.7              # fast JSON metrics if you add --metrics-json
+# tqdm>=4.66.4                # progress bars for bulk testing
+# pyyaml>=6.0.2               # if you add YAML configs alongside config.json
+
+# --- Dev / Test (optional) ---
+# pytest>=8.3.2
+# pytest-cov>=5.0.0
